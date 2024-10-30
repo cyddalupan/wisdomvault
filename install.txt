@@ -1,0 +1,4 @@
+pip install django-jazzmin
+pip install markdown
+pip install django-crispy-forms
+pip install crispy-bootstrap4
