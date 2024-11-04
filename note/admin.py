@@ -5,6 +5,7 @@ from .models import Note
 class NoteAdmin(admin.ModelAdmin):
     list_display = ('title', 'created_at', 'updated_at')
     search_fields = ('title', 'content')
+    fields = ('title', 'content')
     ordering = ('-created_at',)
     
     def get_queryset(self, request):
