@@ -31,7 +31,10 @@ SECRET_KEY = os.getenv('SECRET_KEY', '')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["*", "https://wisdomvault.welfareph.com/"]
+ALLOWED_HOSTS = [
+    'wisdomvault.welfareph.com',
+    'www.wisdomvault.welfareph.com',
+]
 
 
 # Application definition
@@ -167,7 +170,9 @@ SITE_ID = 1
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' 
 
 
-CSRF_TRUSTED_ORIGINS=['https://wisdomvault.welfareph.com/']
+CSRF_TRUSTED_ORIGINS = [
+    'https://wisdomvault.welfareph.com',
+]
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
 
