@@ -12,3 +12,8 @@ class NoteAdmin(admin.ModelAdmin):
         qs = super().get_queryset(request)
         # Filter only QuestionAnswer objects created by current user
         return qs.filter(created_by=request.user)
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
