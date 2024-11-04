@@ -34,6 +34,7 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'wisdomvault.welfareph.com',
     'www.wisdomvault.welfareph.com',
+    'localhost',
 ]
 
 
@@ -49,6 +50,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'allauth',
     'answer',
+    'note',
 ]
 
 MIDDLEWARE = [
