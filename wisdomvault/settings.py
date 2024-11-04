@@ -26,7 +26,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'sz@j@8k54+3$i2db@e7k2-mn(5bwa)3-d#c2)c70z51)@wkacj'
+SECRET_KEY = os.getenv('SECRET_KEY', '')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -176,3 +176,13 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 X_FRAME_OPTIONS = "SAMEORIGIN"
 SILENCED_SYSTEM_CHECKS = ["security.W019"]
+
+JAZZMIN_SETTINGS = {
+    "site_title": "WisdomVault",
+    "site_header": "WisdomVault",
+    "site_brand": "WisdomVault",
+    "site_logo": "wisdomvault/logo.png",
+
+    'welcome_sign': 'Welcome to WisdomVault',
+    'copyright': 'Developed by Cleddrence Dalupan',
+}
