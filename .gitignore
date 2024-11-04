@@ -164,6 +164,5 @@ media/
 staticfiles/
 .DS_Store
 staticfiles/
-static/
 
 firebase/serviceAccountKey.json
