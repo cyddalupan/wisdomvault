@@ -20,6 +20,7 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('emailer/', include('emailer.urls')),
 ]
 
 if settings.DEBUG:
