@@ -6,3 +6,4 @@ pip install python-dotenv
 pip install gunicorn
 pip install django-allauth
 pip install openai
+pip install markdown2

@@ -6,6 +6,9 @@ from django.core.mail import send_mail
 from django.shortcuts import render, redirect
 from .forms import EmailForm
 from django.conf import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 def send_email(request):
     if request.method == 'POST':
@@ -23,8 +26,10 @@ def send_email(request):
                     [recipient],              # To email
                     fail_silently=False,
                 )
-            except BadHeaderError: print("Invalid header found.")
-            except Exception as e: print(f"Failed to send email: {e}")
+            except BadHeaderError:
+                logger.error("Invalid header found.")
+            except Exception as e:
+                logger.error(f"Failed to send email: {e}")
 
             #return redirect('success')  # Assume you have a success page
     else:

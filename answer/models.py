@@ -1,6 +1,6 @@
 from django.conf import settings  # Import settings to refer to the user model
 from django.db import models
-import markdown
+import markdown2
 from django.utils.safestring import mark_safe
 
 class QuestionAnswer(models.Model):
@@ -14,7 +14,7 @@ class QuestionAnswer(models.Model):
 
     def formatted_answer(self):
         """Converts the markdown text to HTML and returns it as a safe string."""
-        html = markdown.markdown(self.answer, extensions=['fenced_code', 'codehilite'])
+        html = markdown2.markdown(self.answer, extras=['fenced_code', 'codehilite'])
         return mark_safe(html)
 
     def __str__(self):
