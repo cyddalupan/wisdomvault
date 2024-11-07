@@ -10,13 +10,6 @@ load_dotenv()
 
 client = OpenAI()
 
-# Assuming you have a model like
-# class QuestionAnswer(models.Model):
-#     title = models.CharField(max_length=100)
-#     question = models.TextField()
-#     answer = models.TextField()
-#     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
-
 class QuestionAnswerAdmin(admin.ModelAdmin):
     list_display = ('title', 'short_question', 'short_answer')
     fields = ('title', 'question', 'formatted_answer')

@@ -1,6 +1,6 @@
 from django.conf import settings  # Import settings to refer to the user model
 from django.db import models
-import markdown2
+import mistune
 from django.utils.safestring import mark_safe
 
 class QuestionAnswer(models.Model):
@@ -13,8 +13,8 @@ class QuestionAnswer(models.Model):
     )
 
     def formatted_answer(self):
-        """Converts the markdown text to HTML and returns it as a safe string."""
-        html = markdown2.markdown(self.answer, extras=['fenced_code', 'codehilite'])
+        markdown = mistune.create_markdown(renderer=mistune.HTMLRenderer())
+        html = markdown(self.answer)
         return mark_safe(html)
 
     def __str__(self):
