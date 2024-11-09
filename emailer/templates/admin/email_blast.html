@@ -1,0 +1,10 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<h1>Email Blast</h1>
+<form method="post" action="{% url 'admin:send-email-blast' %}">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" name="apply" value="Send Emails" />
+</form>
+{% endblock %}

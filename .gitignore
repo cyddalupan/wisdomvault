@@ -166,3 +166,4 @@ staticfiles/
 staticfiles/
 
 firebase/serviceAccountKey.json
+db.sqlite3

@@ -1,0 +1,11 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools %}
+    <div class="object-tools">
+        <ul class="addlink">
+            <li>
+                <a href="{% url 'admin:send-email-blast' %}" class="button">Send Email Blast</a>
+            </li>
+        </ul>
+    </div>
+{% endblock %}
