@@ -7,3 +7,5 @@ pip install gunicorn
 pip install django-allauth
 pip install openai
 pip install mistune
+pip install django-crispy-forms
+pip install crispy-bootstrap4

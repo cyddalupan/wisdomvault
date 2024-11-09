@@ -1,10 +1,37 @@
 {% extends "admin/base_site.html" %}
 
+{% load crispy_forms_tags %}
+
 {% block content %}
-<h1>Email Blast</h1>
-<form method="post" action="{% url 'admin:send-email-blast' %}">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <input type="submit" name="apply" value="Send Emails" />
-</form>
+<div class="container mt-4">
+    <h1 class="mb-3">Email Blast</h1>
+    <div class="card">
+        <div class="card-body">
+            <form method="post" action="{% url 'admin:send-email-blast' %}" class="needs-validation" novalidate>
+                {% csrf_token %}
+                {{ form|crispy }}
+                <div class="form-group">
+                    <input type="submit" class="btn btn-primary" name="apply" value="Send Emails" />
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        var forms = document.getElementsByClassName('needs-validation');
+        var validation = Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+})();
+</script>
 {% endblock %}
