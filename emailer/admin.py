@@ -5,7 +5,7 @@ from django.shortcuts import render
 from django.core.mail import send_mass_mail
 from django.conf import settings
 from django.http import HttpResponseRedirect
-from .models import EmailList, EmailSent
+from .models import Category, EmailList, EmailSent
 
 class EmailBlastForm(forms.Form):
     emails = forms.ModelMultipleChoiceField(
@@ -38,8 +38,8 @@ def email_blast_view(request, admin_site):
     return render(request, 'admin/email_blast.html', {'form': form, 'opts': admin_site.app_index})
 
 class EmailListAdmin(admin.ModelAdmin):
-    list_display = ('email', 'name', 'created_at')
-    search_fields = ('email', 'name')
+    list_display = ('email', 'name', 'category', 'created_at')
+    search_fields = ('email', 'name',  'category')
     change_list_template = "admin/email_list_change_list.html"
 
     def get_urls(self):
@@ -73,3 +73,7 @@ class EmailListAdmin(admin.ModelAdmin):
         return render(request, 'admin/email_blast.html', {'form': form, 'opts': self.model._meta})
 
 admin.site.register(EmailList, EmailListAdmin)
+
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ('name',)

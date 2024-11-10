@@ -32,6 +32,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', '')
 DEBUG = True
 
 ALLOWED_HOSTS = [
+    '127.0.0.1',
     'wisdomvault.welfareph.com',
     'www.wisdomvault.welfareph.com',
     'localhost',
