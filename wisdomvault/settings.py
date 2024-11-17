@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'answer',
     'note',
     'emailer',
+    'grammar_check'
 ]
 
 MIDDLEWARE = [
@@ -207,4 +208,12 @@ JAZZMIN_SETTINGS = {
 
     'welcome_sign': 'Welcome to WisdomVault',
     'copyright': 'Developed by Cleddrence Dalupan',
+
+    "icons": {
+        "answer.QuestionAnswer": "fas fa-question-circle",             # Changed to question-circle
+        "emailer.Category": "fas fa-tags",                             # Changed to tags
+        "emailer.EmailList": "fas fa-envelope-open",                   # Changed to envelope-open
+        "grammar_check.GrammarCheck": "fas fa-spell-check",            # Changed to spell-check
+        "note.Note": "fas fa-sticky-note",                             # Changed to sticky-note
+    }
 }
