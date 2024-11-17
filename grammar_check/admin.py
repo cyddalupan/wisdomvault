@@ -23,14 +23,19 @@ class GrammarCheckAdmin(admin.ModelAdmin):
     def grammar_check(self, request):
         form = GrammarCheckForm(request.POST or None)
         corrected_text = ''
-
+        latest_grammar_check = None
+        
         if request.method == 'POST' and form.is_valid():
             grammar_check_instance = form.save(commit=False)
             grammar_check_instance.corrected_output = self.perform_grammar_check(grammar_check_instance.user_input)
             grammar_check_instance.save()
             corrected_text = grammar_check_instance.formatted_output
-
-        latest_grammar_check = GrammarCheck.objects.latest('id')
+            latest_grammar_check = grammar_check_instance
+            
+        else:
+            # Handle the case where no GrammarCheck objects exist
+            if GrammarCheck.objects.exists():
+                latest_grammar_check = GrammarCheck.objects.latest('id')
 
         context = dict(
             self.admin_site.each_context(request),
