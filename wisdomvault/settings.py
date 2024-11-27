@@ -55,7 +55,8 @@ INSTALLED_APPS = [
     'answer',
     'note',
     'emailer',
-    'grammar_check'
+    'grammar_check',
+    'kanbanapp',
 ]
 
 MIDDLEWARE = [
