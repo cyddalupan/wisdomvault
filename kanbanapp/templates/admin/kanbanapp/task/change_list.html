@@ -1,0 +1,106 @@
+{% extends "admin/change_list.html" %}
+{% load i18n %}
+{% load custom_tags %}
+
+{% block content %}
+
+<style>
+    .clear {
+        display: block;
+        width: 100%;
+    }
+    .board {
+        display: flex;
+        flex-wrap: wrap;
+        overflow-x: auto;
+        padding: 15px;
+    }
+
+    .column {
+        flex: 1 1 25%; /* Flex-grow: 1, Flex-shrink: 1, Flex-basis: 25% */
+        max-width: 25%;
+        background-color: #f4f4f9;
+        margin: 0 15px 15px 0;
+        border-radius: 5px;
+        padding: 10px;
+        box-shadow: 0 0 1px rgba(0, 0, 0, 0.3);
+    }
+
+    .column:last-child {
+        margin-right: 0;
+    }
+
+    .column-title {
+        font-size: 16px;
+        font-weight: bold;
+        padding-bottom: 10px;
+    }
+
+    .task {
+        background-color: #fff;
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 3px;
+        box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+    }
+
+    .task a {
+        text-decoration: none;
+        color: #000;
+    }
+
+    .task:hover {
+        box-shadow: 0 2px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    .hidden {
+        display: none;
+    }
+</style>
+
+<h1 class="clear">{{ title }}</h1>
+
+<div class="clear">
+    <label for="board-selector">Select Board:</label>
+    <select id="board-selector" onchange="showSelectedBoard()">
+        {% for board, data in board_data.items %}
+        <option value="board-{{ board.id }}">{{ board.name }}</option>
+        {% endfor %}
+    </select>
+</div>
+
+<div class="boards clear">
+    {% for board, data in board_data.items %}
+    <div id="board-{{ board.id }}" class="board{% if forloop.first %}{% else %} hidden{% endif %}">
+        {% for column in data.columns %}
+        <div class="column">
+            <div class="column-title">{{ column.name }}</div>
+            {% with tasks=data.column_tasks|get_item:column.name %}
+            {% for task in tasks %}
+            <div class="task">
+                <a href="{% url 'admin:kanbanapp_task_change' task.pk %}">{{ task.title }}</a>
+            </div>
+            {% endfor %}
+            {% endwith %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+    function showSelectedBoard() {
+        const selectedBoard = document.getElementById('board-selector').value;
+        const boards = document.querySelectorAll('.board');
+        
+        boards.forEach(board => {
+            if (board.id === selectedBoard) {
+                board.classList.remove('hidden');
+            } else {
+                board.classList.add('hidden');
+            }
+        });
+    }
+</script>
+
+{% endblock %}
