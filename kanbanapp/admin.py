@@ -1,6 +1,7 @@
 from django.contrib import admin
 from .models import Board, Column, Task, TaskForm
 from django.utils.html import format_html
+from django import forms
 
 class TaskAdmin(admin.ModelAdmin):
     form = TaskForm
@@ -60,9 +61,27 @@ class BoardAdmin(admin.ModelAdmin):
             obj.user = request.user
         super().save_model(request, obj, form, change)
 
+class ColumnForm(forms.ModelForm):
+    class Meta:
+        model = Column
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        request = kwargs.pop('request', None)
+        super(ColumnForm, self).__init__(*args, **kwargs)
+
+        if request:
+            self.fields['board'].queryset = Board.objects.filter(user=request.user)
+
 class ColumnAdmin(admin.ModelAdmin):
+    form = ColumnForm
     list_display = ('name', 'board')
-    readonly_fields = ('user',)  # Makes the user field read-only
+    readonly_fields = ('user',)
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super(ColumnAdmin, self).get_form(request, obj, **kwargs)
+        form.base_fields['board'].queryset = Board.objects.filter(user=request.user)
+        return form
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
