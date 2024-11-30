@@ -7,18 +7,15 @@ class TaskAdmin(admin.ModelAdmin):
     list_display = ('title', 'column', 'created_at')
     list_filter = ('column',)
     ordering = ('column',)
+    readonly_fields = ('user',)  # Makes the user field read-only
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        # Ensure that only tasks related to the requesting user are returned
         return qs.filter(user=request.user)
 
     def changelist_view(self, request, extra_context=None):
-        # Filter boards by user and closed status
         boards = Board.objects.filter(user=request.user, closed=False)
-        # Filter columns by user, board and closed status, ensuring columns belong to user's boards
         columns = Column.objects.filter(user=request.user, board__in=boards)
-        # Filter tasks in a similar manner, using the columns from above
         tasks = self.model.objects.filter(user=request.user, column__in=columns)
 
         board_data = {
@@ -37,12 +34,17 @@ class TaskAdmin(admin.ModelAdmin):
 
         return super(TaskAdmin, self).changelist_view(request, extra_context=extra_context)
 
+    def save_model(self, request, obj, form, change):
+        if not obj.pk:  # Only set user on creation, not on updates
+            obj.user = request.user
+        super().save_model(request, obj, form, change)
+
 class BoardAdmin(admin.ModelAdmin):
     list_display = ('name', 'is_open')
+    readonly_fields = ('user',)  # Makes the user field read-only
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        # Ensure that only boards related to the requesting user are returned
         return qs.filter(user=request.user)
 
     def is_open(self, obj):
@@ -53,13 +55,23 @@ class BoardAdmin(admin.ModelAdmin):
 
     is_open.short_description = 'Status'
 
+    def save_model(self, request, obj, form, change):
+        if not obj.pk:
+            obj.user = request.user
+        super().save_model(request, obj, form, change)
+
 class ColumnAdmin(admin.ModelAdmin):
     list_display = ('name', 'board')
+    readonly_fields = ('user',)  # Makes the user field read-only
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        # Ensure that only columns related to user's boards are returned
         return qs.filter(user=request.user)
+
+    def save_model(self, request, obj, form, change):
+        if not obj.pk:
+            obj.user = request.user
+        super().save_model(request, obj, form, change)
 
 admin.site.register(Column, ColumnAdmin)
 admin.site.register(Board, BoardAdmin)
