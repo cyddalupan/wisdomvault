@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import Board, Column, Task, TaskForm
+from django.utils.html import format_html
 
 class TaskAdmin(admin.ModelAdmin):
     form = TaskForm
@@ -7,10 +8,18 @@ class TaskAdmin(admin.ModelAdmin):
     list_filter = ('column',)
     ordering = ('column',)
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        # Ensure that only tasks related to the requesting user are returned
+        return qs.filter(user=request.user)
+
     def changelist_view(self, request, extra_context=None):
-        boards = Board.objects.all()
-        columns = Column.objects.select_related('board').all()
-        tasks = self.model.objects.select_related('column__board').all()
+        # Filter boards by user and closed status
+        boards = Board.objects.filter(user=request.user, closed=False)
+        # Filter columns by user, board and closed status, ensuring columns belong to user's boards
+        columns = Column.objects.filter(user=request.user, board__in=boards)
+        # Filter tasks in a similar manner, using the columns from above
+        tasks = self.model.objects.filter(user=request.user, column__in=columns)
 
         board_data = {
             board: {
@@ -28,11 +37,29 @@ class TaskAdmin(admin.ModelAdmin):
 
         return super(TaskAdmin, self).changelist_view(request, extra_context=extra_context)
 
-class ColumnAdmin(admin.ModelAdmin):
-    list_display = ('name',)
-
 class BoardAdmin(admin.ModelAdmin):
-    list_display = ('name',)  # Remove 'created_at' since it's not a field
+    list_display = ('name', 'is_open')
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        # Ensure that only boards related to the requesting user are returned
+        return qs.filter(user=request.user)
+
+    def is_open(self, obj):
+        if not obj.closed:
+            return format_html('<span style="color: green;">✔ Open</span>')
+        else:
+            return format_html('<span style="color: red;">✖ Closed</span>')
+
+    is_open.short_description = 'Status'
+
+class ColumnAdmin(admin.ModelAdmin):
+    list_display = ('name', 'board')
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        # Ensure that only columns related to user's boards are returned
+        return qs.filter(user=request.user)
 
 admin.site.register(Column, ColumnAdmin)
 admin.site.register(Board, BoardAdmin)
