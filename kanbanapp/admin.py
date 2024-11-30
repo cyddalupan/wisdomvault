@@ -1,14 +1,16 @@
 from django.contrib import admin
-from .models import Board, Column, Task
+from .models import Board, Column, Task, TaskForm
+
 class TaskAdmin(admin.ModelAdmin):
+    form = TaskForm
     list_display = ('title', 'column', 'created_at')
     list_filter = ('column',)
     ordering = ('column',)
 
     def changelist_view(self, request, extra_context=None):
         boards = Board.objects.all()
-        columns = Column.objects.select_related('board').all()  # Fetch columns with their boards
-        tasks = self.model.objects.select_related('column__board').all()  # Fetch tasks with related columns and boards
+        columns = Column.objects.select_related('board').all()
+        tasks = self.model.objects.select_related('column__board').all()
 
         board_data = {
             board: {

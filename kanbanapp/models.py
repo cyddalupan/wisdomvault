@@ -1,4 +1,5 @@
 from django.db import models
+from django import forms
 
 class Board(models.Model):
     name = models.CharField(max_length=100)
@@ -23,3 +24,19 @@ class Task(models.Model):
 
     def __str__(self):
         return self.title
+
+class TaskForm(forms.ModelForm):
+    class Meta:
+        model = Task
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super(TaskForm, self).__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            # Existing task: filter columns by the current task's board
+            board = self.instance.column.board
+            self.fields['column'].queryset = Column.objects.filter(board=board)
+        else:
+            # New task: show all columns but display as "Column Name - Board Name"
+            self.fields['column'].queryset = Column.objects.select_related('board')
+            self.fields['column'].label_from_instance = lambda obj: f"{obj.name} - {obj.board.name}"

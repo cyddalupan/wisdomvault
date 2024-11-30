@@ -35,6 +35,7 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     'wisdomvault.welfareph.com',
     'www.wisdomvault.welfareph.com',
+    'light-etransit-gra9-8000.brap.dev',
     'localhost',
 ]
 
@@ -187,6 +188,7 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 
 CSRF_TRUSTED_ORIGINS = [
     'https://wisdomvault.welfareph.com',
+    'https://light-etransit-gra9-8000.brap.dev'
 ]
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True

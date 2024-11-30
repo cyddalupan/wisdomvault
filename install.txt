@@ -1,11 +1,12 @@
+python -m venv .venv
+python -m pip install --upgrade pip
 pip install Django
 pip install python-dotenv
 pip install django-jazzmin
 pip install markdown
 pip install django-crispy-forms
 pip install crispy-bootstrap4
-pip install python-dotenv
 pip install gunicorn
 pip install django-allauth
 pip install openai
-pip install mistunepyt  
+pip install mistune

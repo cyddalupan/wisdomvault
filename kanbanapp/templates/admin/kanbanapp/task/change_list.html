@@ -124,9 +124,11 @@
             <div class="column-title">{{ column.name }}</div>
             {% with tasks=data.column_tasks|get_item:column.name %}
             {% for task in tasks %}
-            <div class="task">
-                <a href="{% url 'admin:kanbanapp_task_change' task.pk %}">{{ task.title }}</a>
-            </div>
+            <a href="{% url 'admin:kanbanapp_task_change' task.pk %}">
+                <div class="task">
+                    {{ task.title }}
+                </div>
+            </a>
             {% endfor %}
             {% endwith %}
         </div>
