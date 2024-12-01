@@ -84,7 +84,7 @@ class ColumnAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        return qs.filter(user=request.user)
+        return qs.filter(user=request.user).order_by('board__name', 'position')
 
     def save_model(self, request, obj, form, change):
         if not obj.pk:
