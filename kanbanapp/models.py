@@ -1,6 +1,5 @@
 from django.db import models
 from django import forms
-from django.conf import settings
 from django.contrib.auth import get_user_model
 
 class Board(models.Model):
@@ -37,12 +36,21 @@ class TaskForm(forms.ModelForm):
         fields = '__all__'
 
     def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop('request', None)
         super(TaskForm, self).__init__(*args, **kwargs)
+
         if self.instance and self.instance.pk:
-            # Existing task: filter columns by the current task's board
+            # Existing task: show columns from the current task's board
             board = self.instance.column.board
             self.fields['column'].queryset = Column.objects.filter(board=board)
         else:
-            # New task: show all columns but display as "Column Name - Board Name"
-            self.fields['column'].queryset = Column.objects.select_related('board')
-            self.fields['column'].label_from_instance = lambda obj: f"{obj.name} - {obj.board.name}"
+            # New task: show all columns created by the user, excluding columns from closed boards
+            if self.request:
+                self.fields['column'].queryset = Column.objects.filter(
+                    user=self.request.user,
+                    board__closed=False
+                ).select_related('board')
+                self.fields['column'].label_from_instance = lambda obj: f"{obj.name} - {obj.board.name}"
+            else:
+                # If request is not available, show no columns
+                self.fields['column'].queryset = Column.objects.none()
