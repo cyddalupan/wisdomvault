@@ -8,7 +8,13 @@ class TaskAdmin(admin.ModelAdmin):
     list_display = ('title', 'column', 'created_at')
     list_filter = ('column',)
     ordering = ('column',)
-    readonly_fields = ('user',)  # Makes the user field read-only
+    readonly_fields = ('user',)
+
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        form.request = request  # Pass the request to the form
+        return form
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -36,13 +42,13 @@ class TaskAdmin(admin.ModelAdmin):
         return super(TaskAdmin, self).changelist_view(request, extra_context=extra_context)
 
     def save_model(self, request, obj, form, change):
-        if not obj.pk:  # Only set user on creation, not on updates
+        if not obj.pk: 
             obj.user = request.user
         super().save_model(request, obj, form, change)
 
 class BoardAdmin(admin.ModelAdmin):
     list_display = ('name', 'is_open')
-    readonly_fields = ('user',)  # Makes the user field read-only
+    readonly_fields = ('user',) 
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -79,8 +85,8 @@ class ColumnAdmin(admin.ModelAdmin):
     readonly_fields = ('user',)
 
     def get_form(self, request, obj=None, **kwargs):
-        form = super(ColumnAdmin, self).get_form(request, obj, **kwargs)
-        form.base_fields['board'].queryset = Board.objects.filter(user=request.user)
+        form = super().get_form(request, obj, **kwargs)
+        form.request = request
         return form
 
     def get_queryset(self, request):
