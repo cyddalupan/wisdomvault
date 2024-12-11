@@ -52,7 +52,7 @@ class GrammarCheckAdmin(admin.ModelAdmin):
 
     def perform_grammar_check(self, text):
         messages = [
-            {"role": "system", "content": 'User will send message and you will improve that message. make is respectful and easy to understand.'},
+            {"role": "system", "content": 'User will send message and you will improve that message. make it respectful and easy to understand but reduce the use for pleasantries.'},
         ]
         messages.append({"role": "user", "content": text})
         completion = client.chat.completions.create(
