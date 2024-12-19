@@ -105,6 +105,17 @@ DATABASES = {
     }
 }
 
+if ENVIRONMENT == 'production':
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.mysql',
+                'NAME': os.getenv('MYSQL_DATABASE'),
+                'USER': os.getenv('MYSQL_USER'),
+                'PASSWORD': os.getenv('MYSQL_PASSWORD'),
+                'HOST': os.getenv('MYSQL_HOST', 'localhost'),
+                'PORT': os.getenv('MYSQL_PORT', '3306'),
+            }
+        }
 
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators
