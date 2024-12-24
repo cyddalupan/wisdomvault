@@ -9,7 +9,7 @@ from django.http import JsonResponse, HttpResponse
 from page.models import FacebookPage
 from .models import Chat, UserProfile
 from django.views.decorators.csrf import csrf_exempt
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -20,7 +20,7 @@ VERIFY_TOKEN = os.getenv('VERIFY_TOKEN')
 PAGE_ACCESS_TOKEN = os.getenv('PAGE_ACCESS_TOKEN')
 
 def index(request):
-    return HttpResponse("Hello, World!")
+    return render(request, 'index.html')
 
 @csrf_exempt
 def save_facebook_chat(request):
