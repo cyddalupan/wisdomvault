@@ -13,6 +13,17 @@ from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
 from dotenv import load_dotenv
 
+## TEST IMPORTS
+import os
+from django.http import JsonResponse
+from django.shortcuts import render
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+from google.oauth2 import service_account
+
 load_dotenv()
 
 client = OpenAI()
@@ -138,3 +149,52 @@ class FacebookPageInstance:
 
 def chat_test_page(request):
     return render(request, 'chat_test.html')
+
+# Define the scope and sample spreadsheet information
+SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+SAMPLE_SPREADSHEET_ID = "1u-Vy9b3KD4l3Ne2ZM3DXg8NmPxzv_QHJzXtzVPKeHu8"
+SAMPLE_RANGE_NAME = "'Sheet1'!A2:F3"
+
+def quickstart(request):
+    creds = service_account.Credentials.from_service_account_file("service_account.json", scopes=SCOPES)
+    try:
+        service = build("sheets", "v4", credentials=creds)
+        sheet = service.spreadsheets()
+        result = (
+            sheet.values()
+            .get(spreadsheetId=SAMPLE_SPREADSHEET_ID, range=SAMPLE_RANGE_NAME)
+            .execute()
+        )
+        values = result.get("values", [])
+
+        return JsonResponse({"data": values})
+
+    except HttpError as err:
+        return JsonResponse({"error": str(err)})
+    
+def add_edit_data(request):
+    creds = service_account.Credentials.from_service_account_file("service_account.json", scopes=SCOPES)
+    try:
+        service = build("sheets", "v4", credentials=creds)
+        sheet = service.spreadsheets()
+        
+        # Data to be added or updated
+        values = [
+            ["Name", "Age", "Location"],
+            ["Alice", 30, "New York"],
+            ["Bob", 25, "San Francisco"]
+        ]
+        body = {"values": values}
+
+        # Update or append data in a specific range
+        result = sheet.values().update(
+            spreadsheetId=SAMPLE_SPREADSHEET_ID,
+            range="'Sheet1'!A1:C3",
+            valueInputOption="RAW",
+            body=body
+        ).execute()
+
+        return JsonResponse({"updatedCells": result.get("updatedCells")})
+
+    except HttpError as err:
+        return JsonResponse({"error": str(err)})

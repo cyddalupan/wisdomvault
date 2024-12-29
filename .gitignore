@@ -167,3 +167,7 @@ staticfiles/
 
 firebase/serviceAccountKey.json
 db.sqlite3
+
+# GOOGLE
+service_account.json
+credentials.json
