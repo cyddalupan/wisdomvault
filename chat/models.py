@@ -4,14 +4,13 @@ from django.db import models
 class UserProfile(models.Model):
     facebook_id = models.CharField(max_length=100, unique=True)
     page_id = models.CharField(max_length=100)
-    full_name = models.CharField(max_length=255)
-    email = models.EmailField(max_length=255, default='')
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
-    task = models.CharField(max_length=255, default='verify_user')
+    task = models.CharField(max_length=255, default='', blank=True)
 
     def __str__(self):
-        return self.full_name
-
+        if self.user:
+            return f"{self.user.first_name} {self.user.last_name}"
+        return "UserProfile with no linked User"
 
 class Chat(models.Model):
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
@@ -20,4 +19,6 @@ class Chat(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Chat with {self.user.full_name} on {self.timestamp}"
+        if self.user and self.user.user:
+            return f"Chat with {self.user.user.first_name} {self.user.user.last_name} on {self.timestamp}"
+        return f"Chat on {self.timestamp}"

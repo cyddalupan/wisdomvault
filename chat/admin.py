@@ -1,13 +1,25 @@
 from django.contrib import admin
 from .models import UserProfile, Chat
 
-@admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ('facebook_id', 'page_id',  'full_name')
-    search_fields = ('facebook_id', 'page_id',  'full_name')
+    list_display = ('user_full_name', 'facebook_id', 'page_id', 'task')
+    search_fields = ('user__first_name', 'user__last_name', 'facebook_id', 'page_id', 'task')
+    list_filter = ('task',)
+    ordering = ('user__first_name', 'user__last_name')
+
+    def user_full_name(self, obj):
+        # Check if the user field is not None
+        if obj.user:
+            return f"{obj.user.first_name} {obj.user.last_name}"
+        # Return a default value or an empty string if user is None
+        return "No User"
+
+    user_full_name.short_description = 'Full Name'
+
+admin.site.register(UserProfile, UserProfileAdmin)
 
 @admin.register(Chat)
 class ChatAdmin(admin.ModelAdmin):
     list_display = ('user', 'message', 'reply', 'timestamp')
     list_filter = ('timestamp',)
-    search_fields = ('user__full_name', 'message', 'reply')
+    search_fields = ('user__user__first_name', 'user__user__last_name', 'message', 'reply')
