@@ -49,7 +49,6 @@ def save_facebook_chat(request):
                         defaults={
                             'facebook_id': sender_id,
                             'page_id': page_id,
-                            'full_name': 'Facebook User',
                         }
                     )
 
