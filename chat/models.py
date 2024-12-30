@@ -4,6 +4,7 @@ from django.db import models
 class UserProfile(models.Model):
     facebook_id = models.CharField(max_length=100, unique=True)
     page_id = models.CharField(max_length=100)
+    user_type = models.CharField(max_length=255)
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     task = models.CharField(max_length=255, default='', blank=True)
 

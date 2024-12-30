@@ -6,7 +6,7 @@ import requests
 from openai import OpenAI
 from django.http import JsonResponse, HttpResponse
 
-from chat.functions import verify_user
+from chat.functions import inventory_setup, verify_user
 from page.models import FacebookPage
 from .models import Chat, UserProfile
 from django.views.decorators.csrf import csrf_exempt
@@ -108,6 +108,10 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         instruction = verify_user.instruction()
         tools = verify_user.generate_tools()
         tool_function = verify_user.tool_function
+    if user_profile.task == "inventory_setup":
+        instruction = inventory_setup.instruction()
+        tools = inventory_setup.generate_tools()
+        tool_function = inventory_setup.tool_function
 
     messages = [
         {"role": "system", "content": "Your name is KENSHI (Kiosk and Easy Navigation System for Handling Inventory). Talk in taglish. keep reply short. give instructions or ask questions one at a time"},
