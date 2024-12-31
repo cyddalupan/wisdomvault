@@ -2,7 +2,7 @@
 import json
 
 
-def instruction():
+def instruction(facebook_page_instance):
     return "ask for users full name because maybe name in facebook is different"
 
 def generate_tools():
