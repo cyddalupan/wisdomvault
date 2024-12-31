@@ -79,6 +79,40 @@ def generate_tools():
         }
     })
 
+    tools.append({
+        "type": "function",
+        "function": {
+            "name": "add_row",
+            "description": "add one row from SpreadSheet",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "product_code": {
+                        "type": "string",
+                        "description": "unique code",
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "item or product name",
+                    },
+                    "stocks": {
+                        "type": "integer",
+                        "description": "how many items are left",
+                    },
+                    "price": {
+                        "type": "integer",
+                        "description": "how much is the item",
+                    },
+                    "desciprtion": {
+                        "type": "string",
+                        "description": "product description",
+                    },
+                },
+                "required": ["name"],
+            },
+        }
+    })
+
     return tools
 
 def tool_function(tool_calls, user_profile, facebook_page_instance):
@@ -94,6 +128,16 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
                 is_success = delete_row(facebook_page_instance.sheet_id, row_number)
                 if is_success:
                     return "Row Deleted. What else can I help you?"
+        
+        if function_name == "add_row":
+            product_code = arguments_dict.get('product_code', "")
+            name = arguments_dict.get('name', "")
+            stocks = arguments_dict.get('stocks', 0)
+            price = arguments_dict.get('price', "")
+            desciprtion = arguments_dict.get('desciprtion', "")
+            is_success = add_row(facebook_page_instance.sheet_id, product_code, name, stocks, price, desciprtion)
+            if is_success:
+                return "Row Add. What else can I help you?"
     return None
 
 def get_service():
@@ -143,4 +187,30 @@ def delete_row(sheet_id, row_id):
 
     except Exception as e:
         print(f"Error deleting row: {e}")
+        return False
+
+def add_row(sheet_id, product_code, name, stocks, price, description):
+    service = get_service()
+
+    try:
+        # Extract the new row data to be appended
+        new_row = [
+            [product_code, name, stocks, price, description]
+        ]
+        
+        # Use the values.append() method to append the new row at the end
+        response = service.spreadsheets().values().append(
+            spreadsheetId=sheet_id,
+            range="Inventory",  # The range where we want to append the data (automatically adds to the end)
+            valueInputOption="USER_ENTERED",  # This will allow for formatting and conversion of values (like numbers)
+            body={
+                "values": new_row
+            }
+        ).execute()
+
+        print("Row added successfully.")
+        return True
+
+    except Exception as e:
+        print(f"Error adding row: {e}")
         return False
