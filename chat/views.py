@@ -123,8 +123,6 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         {"role": "system", "content": f"Focus on: {instruction(facebook_page_instance)}"} 
     ]
 
-    print("instruc",  messages)
-
     # Include previous chat history in the conversation
     for chat in chat_history:
         messages.append({"role": "user", "content": chat.message})

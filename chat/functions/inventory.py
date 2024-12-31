@@ -2,40 +2,57 @@ import json
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from google.oauth2 import service_account
+import time
+
+# Global variable to store the fetched data and its timestamp
+cached_data = {
+    'data': None,
+    'timestamp': 0
+}
 
 def instruction(facebook_page_instance, target_row=None):
-    # TODO find a way to store value for 1minute
-    if facebook_page_instance and getattr(facebook_page_instance, 'sheet_id', None):
-        sheet_id = facebook_page_instance.sheet_id
-        
-        try:
-            # Initialize the Sheets API service
-            service = get_service()
+    global cached_data  # Use the global variable
 
-            # Read the data from the "Inventory" sheet
-            result = service.spreadsheets().values().get(
-                spreadsheetId=sheet_id,
-                range="Inventory"
-            ).execute()
+    # Check if the cached data is older than 20 seconds
+    current_time = time.time()
+    if current_time - cached_data['timestamp'] > 20:
+        print("Fetching new data from Google Sheets...")
+        if facebook_page_instance and getattr(facebook_page_instance, 'sheet_id', None):
+            sheet_id = facebook_page_instance.sheet_id
 
-            values = result.get('values', [])
-            if not values:
-                inventory_message = "No data found in the 'Inventory' sheet."
-            else:
-                # Format the sheet data into a readable string
-                inventory_message = "Current Inventory Data:\n"
-                for i, row in enumerate(values):
-                    row_info = f"Row {i + 1}: {', '.join(row)}"
-                    if target_row is not None and i == target_row:
-                        row_info += " <-- Target Row"
-                    inventory_message += row_info + "\n"
+            try:
+                # Initialize the Sheets API service
+                service = get_service()
 
-            return f"Manage users' inventory stored on Google Sheets:\n{inventory_message}"
+                # Read the data from the "Inventory" sheet
+                result = service.spreadsheets().values().get(
+                    spreadsheetId=sheet_id,
+                    range="Inventory"
+                ).execute()
 
-        except Exception as e:
-            return f"Error fetching inventory data: {e}"
+                values = result.get('values', [])
+                if not values:
+                    inventory_message = "No data found in the 'Inventory' sheet."
+                else:
+                    # Format the sheet data into a readable string
+                    inventory_message = "Live Inventory Products Data in Sheets Format:\n"
+                    for i, row in enumerate(values):
+                        row_info = f"Row {i + 1}: {', '.join(row)}"
+                        if target_row is not None and i == target_row:
+                            row_info += " <-- Target Row"
+                        inventory_message += row_info + "\n"
+                
+                # Cache the data and timestamp
+                cached_data['data'] = inventory_message
+                cached_data['timestamp'] = current_time
 
-    return "Manage users' inventory that is on Google Sheets."
+            except Exception as e:
+                return f"Error fetching inventory data: {e}"
+
+    else:
+        print("Using cached data...")
+
+    return f"Manage users' inventory stored on Google Sheets:\n{cached_data['data']}"
 
 def generate_tools():
     tools = []
@@ -85,41 +102,24 @@ def get_service():
     return build("sheets", "v4", credentials=creds)
 
 def delete_row(sheet_id, row_id):
-    """
-    Deletes a row in a Google Sheet by its row index.
-
-    Args:
-        sheet_id (str): The ID of the Google Sheet.
-        row_id (str | int): The zero-based index of the row to delete.
-
-    Returns:
-        bool: True if the operation was successful, False otherwise.
-    """
-    print(f"Starting delete_row with sheet_id={sheet_id} and row_id={row_id}")
     service = get_service()
 
     try:
         # Ensure row_id is an integer
         row_id = int(row_id)
-        print(f"Converted row_id to integer: {row_id}")
 
         # Retrieve the current sheets metadata
-        print("Fetching sheets metadata...")
         sheets_metadata = service.spreadsheets().get(spreadsheetId=sheet_id).execute()
-        print(f"Retrieved sheets metadata: {sheets_metadata}")
 
         # Extract the sheet ID for the 'Inventory' sheet
         existing_sheets = {
             sheet['properties']['title']: sheet['properties']['sheetId']
             for sheet in sheets_metadata['sheets']
         }
-        print(f"Existing sheets found: {existing_sheets}")
 
         inventory_sheet_id = existing_sheets.get("Inventory")
         if inventory_sheet_id is None:
-            print("Error: The sheet 'Inventory' does not exist.")
             raise ValueError("The sheet 'Inventory' does not exist in the spreadsheet.")
-        print(f"Inventory sheet ID: {inventory_sheet_id}")
 
         # Prepare the request to delete the row
         delete_row_request = {
@@ -127,22 +127,18 @@ def delete_row(sheet_id, row_id):
                 "range": {
                     "sheetId": inventory_sheet_id,
                     "dimension": "ROWS",
-                    "startIndex": row_id,
-                    "endIndex": row_id + 1,  # Google Sheets uses exclusive end index
+                    "startIndex": row_id - 1,
+                    "endIndex": row_id,  # Google Sheets uses exclusive end index
                 }
             }
         }
-        print(f"Delete row request prepared: {delete_row_request}")
 
         # Execute the request
-        print("Sending batchUpdate request...")
         response = service.spreadsheets().batchUpdate(
             spreadsheetId=sheet_id,
             body={"requests": [delete_row_request]}
         ).execute()
-        print(f"Batch update response: {response}")
 
-        print("Row deleted successfully.")
         return True
 
     except Exception as e:
