@@ -5,6 +5,7 @@ class FacebookPage(models.Model):
     token = models.CharField(max_length=255)
     page_name = models.CharField(max_length=255)
     sheet_id = models.CharField(max_length=255)
+    info = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return self.page_name
