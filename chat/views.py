@@ -4,7 +4,7 @@ import traceback
 import requests
 from openai import OpenAI
 from django.http import JsonResponse, HttpResponse
-from chat.functions import change_topic, inventory, inventory_setup, pos, verify_user
+from chat.functions import change_topic, inventory, inventory_setup, other, pos, verify_user
 from chat.functions.task_utils import identify_task
 from page.models import FacebookPage
 from .models import Chat, UserProfile
@@ -98,6 +98,11 @@ def ai_process(user_profile, facebook_page_instance, first_run):
     tools = None
     tool_function = None
 
+    # change task to customer when empty.
+    if not user_profile.task:
+        user_profile.task == "customer"
+        user_profile.save()
+
     # Determine the task and set up instructions, tools, and functions
     if user_profile.task == "verify_user":
         instruction = verify_user.instruction
@@ -111,6 +116,10 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         instruction = inventory.instruction
         tools = inventory.generate_tools()
         tool_function = inventory.tool_function
+    elif user_profile.task == "other":
+        instruction = other.instruction
+        tools = other.generate_tools()
+        tool_function = other.tool_function
     elif user_profile.task == "pos":
         instruction = pos.instruction
         tools = pos.generate_tools()
