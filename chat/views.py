@@ -4,7 +4,7 @@ import traceback
 import requests
 from openai import OpenAI
 from django.http import JsonResponse, HttpResponse
-from chat.functions import inventory, inventory_setup, verify_user
+from chat.functions import change_topic, inventory, inventory_setup, pos, verify_user
 from chat.functions.task_utils import identify_task
 from page.models import FacebookPage
 from .models import Chat, UserProfile
@@ -89,58 +89,82 @@ def ai_process(user_profile, facebook_page_instance, first_run):
     # Retrieve the last 12 chat history for this user
     chat_history = Chat.objects.filter(user=user_profile).order_by('-timestamp')[:12]
     chat_history = list(chat_history)[::-1]  # Reverse to maintain correct chronological order
+
+    # Initial empty instruction and tools setup
     def instruction(facebook_page_instance):
         return ""
-    # Getting Custom function for current topic.
+    
     instruction = instruction
     tools = None
+    tool_function = None
+
+    # Determine the task and set up instructions, tools, and functions
     if user_profile.task == "verify_user":
         instruction = verify_user.instruction
         tools = verify_user.generate_tools()
         tool_function = verify_user.tool_function
-    if user_profile.task == "inventory_setup":
+    elif user_profile.task == "inventory_setup":
         instruction = inventory_setup.instruction
         tools = inventory_setup.generate_tools()
         tool_function = inventory_setup.tool_function
-    if user_profile.task == "inventory":
+    elif user_profile.task == "inventory":
         instruction = inventory.instruction
         tools = inventory.generate_tools()
         tool_function = inventory.tool_function
-    # Build AI Message.
+    elif user_profile.task == "pos":
+        instruction = pos.instruction
+        tools = pos.generate_tools()
+        tool_function = pos.tool_function
+
+    # Build AI message with instruction based on task
     messages = [
         {"role": "system", "content": "Your name is KENSHI (Kiosk and Easy Navigation System for Handling Inventory). Talk in taglish. keep reply short. give instructions or ask questions one at a time"},
-        {"role": "system", "content": f"Focus on: {instruction(facebook_page_instance)}"} 
+        {"role": "system", "content": f"Focus on: {instruction(facebook_page_instance)}"}
     ]
+
     # Include previous chat history in the conversation
     for chat in chat_history:
         messages.append({"role": "user", "content": chat.message})
         if chat.reply and chat.reply != "":
             messages.append({"role": "system", "content": chat.reply})
-    response_content = ""
+
+    # Add tool for changing topic if user is admin or user is not customer
+    if first_run and (user_profile.user_type == 'admin' or user_profile.task != 'customer'):
+        tools = tools or []  # Ensure tools is initialized if None
+        tools.append(change_topic.generate_tools())
+
+    # Attempt to generate a completion using the OpenAI API
     try:
-        # Attempt to generate a completion using the OpenAI API
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=messages,
             tools=tools
         )
         response_content = completion.choices[0].message.content
+
         # Handle tool calls if present
         tool_calls = completion.choices[0].message.tool_calls
         if tool_calls:
-            response_content = tool_function(tool_calls, user_profile, facebook_page_instance)
+            if any(tool_call.function.name == "change_topic" for tool_call in tool_calls):
+                response_content = change_topic.tool_function(tool_calls, user_profile)
+            else:
+                response_content = tool_function(tool_calls, user_profile, facebook_page_instance)
+
             if not response_content and first_run:
                 # Retry the process if tool function fails during the first run
                 response_content = ai_process(user_profile, facebook_page_instance, False)
             if not first_run:
                 # Send an apology if retries fail
                 response_content = "I am sorry it seems like I am getting confused. Can we start again?"
+
     except requests.exceptions.Timeout:
         # Handle timeout errors specifically
         response_content = "The system is currently busy. Please try again in a moment."
+
     except requests.exceptions.RequestException as e:
         # Handle connectivity or request-related errors
         response_content = "There seems to be a connectivity issue. Please check your connection or try again later."
+
     except Exception as e:
         # Log unexpected exceptions for debugging
         print(f"Unexpected error: {e}")
@@ -149,6 +173,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
             "The system is currently unavailable due to unexpected issues. "
             "Our team is working to resolve this. Please try again later."
         )
+    
     return response_content
 
 def chat_test_page(request):

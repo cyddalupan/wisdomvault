@@ -17,7 +17,7 @@ TASK_KEYWORDS = {
         "tingnan ang inventory ko", "stocks update", "manage ng inventory"
     ],
     "pos": [
-        "update POS", "POS", "point of sale", "manage sales", 
+        "update POS", "POS", "sales", "point of sale", "manage sales", 
         "update point of sale", "edit sales", "check sales", 
         "sales management", "handle POS", "manage POS", 
         "tingnan ang benta", "tingnan ang POS", "iupdate ang POS", 
@@ -28,7 +28,57 @@ TASK_KEYWORDS = {
         "benta update", "sales update", "POS tingnan", 
         "POS ayusin", "POS handle", "POS settings"
     ],
-    "customer": ["customer support", "help customer", "customer query"],
+    "other": [
+        # Cancellation Keywords
+        "never mind", "cancel conversation", "stop conversation", 
+        "back", "go back", "balik", "end chat", "tapusin", 
+        "exit", "finished", "leave", "stop it", "suko na", 
+        "enough", "hinto na", "huwag na", "huwag mo nang ituloy", 
+        "exit chat", "tapos na", "stop na", "sapat na",
+
+        # General Help or Assistance
+        "help", "kailangan ko ng tulong", "assist", "assistance", 
+        "support", "query", "tanong", "general question", "tulong", 
+        "help me", "can you assist", "paano ito", "help naman", 
+        "ano gagawin", "assist me", "may tanong ako", "can you help", 
+        "can you explain", "kailangan ng paliwanag", "pa-assist", 
+        "ano na", "ano meron", "help mo ako", 
+
+        # General Information Requests
+        "about", "more info", "info", "information", 
+        "tell me", "explain", "details", "ano ito", "ano yun", 
+        "sabihin mo", "bigyan mo ako ng info", "pakipaliwanag", 
+        "update", "balita", "what is this", "details please", 
+        "pakisabi", "can I know", "paano ba", "info naman",
+
+        # Idle or Random Keywords
+        "anything else", "ibang bagay", "usapang iba", "idle", 
+        "anuman", "random", "walang halaga", "kahit ano", 
+        "just talking", "kwentuhan lang", "wala lang", 
+        "random topic", "walang kwenta", "random lang", 
+        "basta", "bahala na", "kung ano lang", "kung ano ano", 
+
+        # Topic Change
+        "change topic", "ibang topic", "ibang usapan", 
+        "lipat tayo", "ibang usapin", "move on", "iba naman", 
+        "ibang bagay naman", "iba na lang", "shift topic", 
+        "let's talk about something else", "palit tayo", 
+        "lipat ng topic", "ibang issue", "ibang tanong", 
+
+        # Expressions Indicating End or Pause
+        "break muna", "pahinga muna", "stop talking", "pause muna", 
+        "wala na akong sasabihin", "wala na", "huwag na lang", 
+        "okay na", "ayos na", "that’s it", "yun lang", 
+        "wala na akong tanong", "done talking", "done na", 
+
+        # Miscellaneous
+        "di ko alam", "ewan", "bahala ka na", "di ako sure", 
+        "surprise me", "bahala ka", "ikaw na", "ikaw ang mag-decide", 
+        "no idea", "wala akong maisip", "isipin mo na lang", 
+        "ikaw na bahala", "paano ba", "ano ulit", "sabihin mo ulit", 
+        "walang pakialam", "di mahalaga", "di ko alam ang sasabihin"
+    ]
+
 }
 
 def identify_task(message):
