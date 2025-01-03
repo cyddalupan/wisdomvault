@@ -5,6 +5,7 @@ import requests
 from openai import OpenAI
 from django.http import JsonResponse, HttpResponse
 from chat.functions import inventory, inventory_setup, verify_user
+from chat.functions.task_utils import identify_task
 from page.models import FacebookPage
 from .models import Chat, UserProfile
 from django.views.decorators.csrf import csrf_exempt
@@ -24,20 +25,23 @@ def index(request):
 @csrf_exempt
 def save_facebook_chat(request):
     if request.method == 'GET':
-        # Verification for the webhook setup with Facebook
+        # Verify the webhook setup with Facebook
         if request.GET.get('hub.verify_token') == VERIFY_TOKEN:
             return HttpResponse(request.GET['hub.challenge'])
         return HttpResponse('Invalid token', status=403)
+
     elif request.method == 'POST':
         data = json.loads(request.body)
         response_text = ""
+
         for entry in data['entry']:
             for event in entry['messaging']:
                 sender_id = event['sender']['id']  # The user's Facebook ID
                 page_id = entry['id']  # The Facebook page ID
-                message_text = event['message'].get('text')  # Message from the user
+                message_text = event['message'].get('text')  # Message text sent by the user
 
                 if message_text:
+                    # Create or retrieve the user profile
                     user_profile, created = UserProfile.objects.get_or_create(
                         facebook_id=sender_id,
                         defaults={
@@ -46,11 +50,26 @@ def save_facebook_chat(request):
                             'task': 'customer',
                         }
                     )
+
+                    # Identify the user's task based on the message
+                    identified_task = identify_task(message_text)
+                    if identified_task:
+                        user_profile.task = identified_task
+                        user_profile.save()
+
+                    # Save the incoming message to the Chat model
                     chat = Chat.objects.create(user=user_profile, message=message_text, reply='')
-                    page_id = user_profile.page_id
-                    facebook_page_instance = FacebookPage.objects.get(page_id=page_id)
+
+                    # Fetch the FacebookPage instance
+                    facebook_page_instance = FacebookPage.objects.get(page_id=user_profile.page_id)
+
+                    # Process the AI response based on the user's profile and task
                     response_text = ai_process(user_profile, facebook_page_instance, True)
+
+                    # Send the AI-generated response back to the user
                     send_message(sender_id, response_text, facebook_page_instance)
+
+                    # Save the reply to the Chat model
                     chat.reply = response_text
                     chat.save()
         return JsonResponse({'status': 'message processed', 'reply': response_text}, status=200)
