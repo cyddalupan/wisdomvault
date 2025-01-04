@@ -232,9 +232,9 @@ def format_dashboard_sheet(service, sheet_id, dashboard_sheet_id, inventory_shee
                                             "sources": [
                                                 {
                                                     "sheetId": inventory_sheet_id,
-                                                    "startRowIndex": 1,  # Data starts after header
-                                                    "startColumnIndex": 1,  # "Name" column
-                                                    "endColumnIndex": 2,  # Just one column
+                                                    "startRowIndex": 1,
+                                                    "startColumnIndex": 1,
+                                                    "endColumnIndex": 2,
                                                 }
                                             ]
                                         }
@@ -248,9 +248,9 @@ def format_dashboard_sheet(service, sheet_id, dashboard_sheet_id, inventory_shee
                                             "sources": [
                                                 {
                                                     "sheetId": inventory_sheet_id,
-                                                    "startRowIndex": 1,  # Data starts after header
-                                                    "startColumnIndex": 2,  # "Stocks" column
-                                                    "endColumnIndex": 3,  # Just one column
+                                                    "startRowIndex": 1,
+                                                    "startColumnIndex": 2,
+                                                    "endColumnIndex": 3,
                                                 }
                                             ]
                                         }
@@ -289,9 +289,9 @@ def format_dashboard_sheet(service, sheet_id, dashboard_sheet_id, inventory_shee
                                             "sources": [
                                                 {
                                                     "sheetId": sales_summary_sheet_id,
-                                                    "startRowIndex": 1,  # Data starts after header
-                                                    "startColumnIndex": 0,  # "Date Time" column
-                                                    "endColumnIndex": 1,  # Just one column
+                                                    "startRowIndex": 1,
+                                                    "startColumnIndex": 0,
+                                                    "endColumnIndex": 1,
                                                 }
                                             ]
                                         }
@@ -305,9 +305,9 @@ def format_dashboard_sheet(service, sheet_id, dashboard_sheet_id, inventory_shee
                                             "sources": [
                                                 {
                                                     "sheetId": sales_summary_sheet_id,
-                                                    "startRowIndex": 1,  # Data starts after header
-                                                    "startColumnIndex": 1,  # "Sale Total" column
-                                                    "endColumnIndex": 2,  # Just one column
+                                                    "startRowIndex": 1,
+                                                    "startColumnIndex": 1,
+                                                    "endColumnIndex": 2,
                                                 }
                                             ]
                                         }
@@ -318,7 +318,7 @@ def format_dashboard_sheet(service, sheet_id, dashboard_sheet_id, inventory_shee
                     },
                     "position": {
                         "overlayPosition": {
-                            "anchorCell": {"sheetId": dashboard_sheet_id, "rowIndex": 15, "columnIndex": 0}
+                            "anchorCell": {"sheetId": dashboard_sheet_id, "rowIndex": 0, "columnIndex": 10}
                         }
                     },
                 }
@@ -345,9 +345,9 @@ def format_dashboard_sheet(service, sheet_id, dashboard_sheet_id, inventory_shee
                                             "sources": [
                                                 {
                                                     "sheetId": sales_sheet_id,
-                                                    "startRowIndex": 1,  # Data starts after header
-                                                    "startColumnIndex": 1,  # "Product Name" column
-                                                    "endColumnIndex": 2,  # Just one column
+                                                    "startRowIndex": 1,
+                                                    "startColumnIndex": 1,
+                                                    "endColumnIndex": 2,
                                                 }
                                             ]
                                         }
@@ -361,9 +361,9 @@ def format_dashboard_sheet(service, sheet_id, dashboard_sheet_id, inventory_shee
                                             "sources": [
                                                 {
                                                     "sheetId": sales_sheet_id,
-                                                    "startRowIndex": 1,  # Data starts after header
-                                                    "startColumnIndex": 2,  # "Quantity" column
-                                                    "endColumnIndex": 3,  # Just one column
+                                                    "startRowIndex": 1,
+                                                    "startColumnIndex": 2,
+                                                    "endColumnIndex": 3,
                                                 }
                                             ]
                                         }
@@ -374,7 +374,7 @@ def format_dashboard_sheet(service, sheet_id, dashboard_sheet_id, inventory_shee
                     },
                     "position": {
                         "overlayPosition": {
-                            "anchorCell": {"sheetId": dashboard_sheet_id, "rowIndex": 30, "columnIndex": 0}
+                            "anchorCell": {"sheetId": dashboard_sheet_id, "rowIndex": 15, "columnIndex": 0}
                         }
                     },
                 }
