@@ -61,27 +61,33 @@ def format_sheets(sheet_id):
 
         requests = []
 
-        # Add Dashboard and Inventory sheets if not exist
+        # Add sheets if they do not exist
         if "Dashboard" not in existing_sheets:
             requests.append(add_sheet_request("Dashboard"))
         if "Inventory" not in existing_sheets:
             requests.append(add_sheet_request("Inventory"))
+        if "Sales" not in existing_sheets:
+            requests.append(add_sheet_request("Sales"))
+        if "Sales Summary" not in existing_sheets:
+            requests.append(add_sheet_request("Sales Summary"))
 
         # Perform batch update to add missing sheets
         if requests:
             service.spreadsheets().batchUpdate(spreadsheetId=sheet_id, body={"requests": requests}).execute()
 
-        # Retrieve sheetId for Dashboard and Inventory after update
+        # Retrieve sheet IDs for all necessary sheets
         sheets_metadata = service.spreadsheets().get(spreadsheetId=sheet_id).execute()
         dashboard_sheet_id = existing_sheets.get("Dashboard", next(sheet['properties']['sheetId'] for sheet in sheets_metadata['sheets'] if sheet['properties']['title'] == "Dashboard"))
         inventory_sheet_id = existing_sheets.get("Inventory", next(sheet['properties']['sheetId'] for sheet in sheets_metadata['sheets'] if sheet['properties']['title'] == "Inventory"))
+        sales_sheet_id = existing_sheets.get("Sales", next(sheet['properties']['sheetId'] for sheet in sheets_metadata['sheets'] if sheet['properties']['title'] == "Sales"))
+        sales_summary_sheet_id = existing_sheets.get("Sales Summary", next(sheet['properties']['sheetId'] for sheet in sheets_metadata['sheets'] if sheet['properties']['title'] == "Sales Summary"))
 
-        # Reorder sheets: Dashboard first, Inventory second
-        reorder_sheets(service, sheet_id, dashboard_sheet_id, inventory_sheet_id)
-
-        # Format Inventory and Dashboard sheets
+        # Reorder sheets and format them
+        reorder_sheets(service, sheet_id, dashboard_sheet_id, inventory_sheet_id, sales_summary_sheet_id, sales_sheet_id)
         format_inventory_sheet(service, sheet_id, inventory_sheet_id)
-        format_dashboard_sheet(service, sheet_id, dashboard_sheet_id, inventory_sheet_id)
+        format_sales_sheet(service, sheet_id, sales_sheet_id)
+        format_sales_summary_sheet(service, sheet_id, sales_summary_sheet_id)
+        format_dashboard_sheet(service, sheet_id, dashboard_sheet_id, inventory_sheet_id, sales_summary_sheet_id, sales_sheet_id)
 
         return "Sheets formatted successfully!"
 
@@ -97,10 +103,12 @@ def add_sheet_request(sheet_title):
         }
     }
 
-def reorder_sheets(service, sheet_id, dashboard_sheet_id, inventory_sheet_id):
+def reorder_sheets(service, sheet_id, dashboard_sheet_id, inventory_sheet_id, sales_summary_sheet_id, sales_sheet_id):
     reorder_request = [
         {"updateSheetProperties": {"properties": {"sheetId": dashboard_sheet_id, "index": 0}, "fields": "index"}},
-        {"updateSheetProperties": {"properties": {"sheetId": inventory_sheet_id, "index": 1}, "fields": "index"}}
+        {"updateSheetProperties": {"properties": {"sheetId": inventory_sheet_id, "index": 1}, "fields": "index"}},
+        {"updateSheetProperties": {"properties": {"sheetId": sales_summary_sheet_id, "index": 2}, "fields": "index"}},
+        {"updateSheetProperties": {"properties": {"sheetId": sales_sheet_id, "index": 3}, "fields": "index"}}
     ]
     service.spreadsheets().batchUpdate(spreadsheetId=sheet_id, body={"requests": reorder_request}).execute()
 
@@ -202,10 +210,10 @@ def format_inventory_sheet(service, sheet_id, inventory_sheet_id):
 
     return True
 
-def format_dashboard_sheet(service, sheet_id, dashboard_sheet_id, inventory_sheet_id):
+def format_dashboard_sheet(service, sheet_id, dashboard_sheet_id, inventory_sheet_id, sales_summary_sheet_id, sales_sheet_id):
     try:
-        # Define the chart request with valid position
-        add_chart_request = {
+        # Chart 1: Inventory Stock Levels (Column Chart)
+        add_stock_chart_request = {
             "addChart": {
                 "chart": {
                     "spec": {
@@ -251,7 +259,7 @@ def format_dashboard_sheet(service, sheet_id, dashboard_sheet_id, inventory_shee
                             ],
                         }
                     },
-                    "position": {  # Use overlayPosition without conflicts
+                    "position": {
                         "overlayPosition": {
                             "anchorCell": {"sheetId": dashboard_sheet_id, "rowIndex": 0, "columnIndex": 0}
                         }
@@ -260,12 +268,281 @@ def format_dashboard_sheet(service, sheet_id, dashboard_sheet_id, inventory_shee
             }
         }
 
-        # Add the chart to the dashboard
+        # Chart 2: Sales Summary (Smooth Line Chart)
+        add_sales_summary_chart_request = {
+            "addChart": {
+                "chart": {
+                    "spec": {
+                        "title": "Sales Over Time",
+                        "basicChart": {
+                            "chartType": "LINE",
+                            "legendPosition": "BOTTOM_LEGEND",
+                            "lineSmoothing": True,
+                            "axis": [
+                                {"position": "BOTTOM_AXIS", "title": "Date Time"},
+                                {"position": "LEFT_AXIS", "title": "Sale Total"},
+                            ],
+                            "domains": [
+                                {
+                                    "domain": {
+                                        "sourceRange": {
+                                            "sources": [
+                                                {
+                                                    "sheetId": sales_summary_sheet_id,
+                                                    "startRowIndex": 1,  # Data starts after header
+                                                    "startColumnIndex": 0,  # "Date Time" column
+                                                    "endColumnIndex": 1,  # Just one column
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ],
+                            "series": [
+                                {
+                                    "series": {
+                                        "sourceRange": {
+                                            "sources": [
+                                                {
+                                                    "sheetId": sales_summary_sheet_id,
+                                                    "startRowIndex": 1,  # Data starts after header
+                                                    "startColumnIndex": 1,  # "Sale Total" column
+                                                    "endColumnIndex": 2,  # Just one column
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ],
+                        }
+                    },
+                    "position": {
+                        "overlayPosition": {
+                            "anchorCell": {"sheetId": dashboard_sheet_id, "rowIndex": 15, "columnIndex": 0}
+                        }
+                    },
+                }
+            }
+        }
+
+        # Chart 3: Best Selling Products (Bar Chart)
+        add_best_selling_chart_request = {
+            "addChart": {
+                "chart": {
+                    "spec": {
+                        "title": "Best Selling Products",
+                        "basicChart": {
+                            "chartType": "COLUMN",
+                            "legendPosition": "BOTTOM_LEGEND",
+                            "axis": [
+                                {"position": "BOTTOM_AXIS", "title": "Product Names"},
+                                {"position": "LEFT_AXIS", "title": "Quantity Sold"},
+                            ],
+                            "domains": [
+                                {
+                                    "domain": {
+                                        "sourceRange": {
+                                            "sources": [
+                                                {
+                                                    "sheetId": sales_sheet_id,
+                                                    "startRowIndex": 1,  # Data starts after header
+                                                    "startColumnIndex": 1,  # "Product Name" column
+                                                    "endColumnIndex": 2,  # Just one column
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ],
+                            "series": [
+                                {
+                                    "series": {
+                                        "sourceRange": {
+                                            "sources": [
+                                                {
+                                                    "sheetId": sales_sheet_id,
+                                                    "startRowIndex": 1,  # Data starts after header
+                                                    "startColumnIndex": 2,  # "Quantity" column
+                                                    "endColumnIndex": 3,  # Just one column
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ],
+                        }
+                    },
+                    "position": {
+                        "overlayPosition": {
+                            "anchorCell": {"sheetId": dashboard_sheet_id, "rowIndex": 30, "columnIndex": 0}
+                        }
+                    },
+                }
+            }
+        }
+
+        # Add the charts to the dashboard
         response = service.spreadsheets().batchUpdate(
-            spreadsheetId=sheet_id, body={"requests": [add_chart_request]}
+            spreadsheetId=sheet_id,
+            body={"requests": [
+                add_stock_chart_request,
+                add_sales_summary_chart_request,
+                add_best_selling_chart_request
+            ]}
         ).execute()
 
-        print("Chart added successfully:", response)
+        print("Charts added successfully:", response)
 
     except HttpError as err:
-        print(f"Error while adding the chart: {err}")
+        print(f"Error while adding the charts: {err}")
+
+def format_sales_sheet(service, sheet_id, sales_sheet_id):
+    def header_format():
+        return {
+            "backgroundColor": {"red": 0.2, "green": 0.6, "blue": 0.6},  # Dark teal
+            "textFormat": {"bold": True, "fontFamily": "Arial", "fontSize": 12, "foregroundColor": {"red": 1, "green": 1, "blue": 1}},
+            "horizontalAlignment": "CENTER"
+        }
+
+    def currency_format():
+        return {
+            "numberFormat": {"type": "CURRENCY", "pattern": "$#,##0.00"}
+        }
+
+    def number_format():
+        return {
+            "numberFormat": {"type": "NUMBER", "pattern": "#,##0"}
+        }
+
+    # Define the header formatting
+    format_header_request = {
+        "updateCells": {
+            "rows": [{
+                "values": [
+                    {"userEnteredValue": {"stringValue": "Date Time"}, "userEnteredFormat": header_format()},
+                    {"userEnteredValue": {"stringValue": "Product Name"}, "userEnteredFormat": header_format()},
+                    {"userEnteredValue": {"stringValue": "Quantity"}, "userEnteredFormat": header_format()},
+                    {"userEnteredValue": {"stringValue": "Total Amount"}, "userEnteredFormat": header_format()},
+                ]
+            }],
+            "fields": "userEnteredValue,userEnteredFormat",
+            "start": {"sheetId": sales_sheet_id, "rowIndex": 0, "columnIndex": 0},
+        }
+    }
+
+    # Resize columns
+    resize_columns_request = {
+        "updateDimensionProperties": {
+            "range": {"sheetId": sales_sheet_id, "dimension": "COLUMNS", "startIndex": 0, "endIndex": 4},
+            "properties": {"pixelSize": 150},
+            "fields": "pixelSize",
+        }
+    }
+
+    # Add test data
+    test_data = [
+        ["2025-01-04 10:30:00", "Product A", 2, 20.00],
+        ["2025-01-04 11:00:00", "Product B", 5, 50.00],
+        ["2025-01-04 11:30:00", "Product C", 1, 15.00],
+        ["2025-01-04 12:34:00", "Product A", 5, 50.00],
+        ["2025-01-04 12:34:00", "Product B", 15, 300.00],
+        ["2025-01-04 12:34:00", "Product C", 12, 310.00],
+    ]
+
+    test_data_requests = []
+    for i, row in enumerate(test_data):
+        values = []
+        for j, val in enumerate(row):
+            cell_format = {}
+            if j == 2:  # Quantity column
+                cell_format = number_format()
+            elif j == 3:  # Total Amount column
+                cell_format = currency_format()
+
+            values.append({"userEnteredValue": {"numberValue" if isinstance(val, (int, float)) else "stringValue": val}, 
+                           "userEnteredFormat": cell_format})
+        test_data_requests.append({"values": values})
+
+    add_test_data_request = {
+        "updateCells": {
+            "rows": test_data_requests,
+            "fields": "userEnteredValue,userEnteredFormat",
+            "start": {"sheetId": sales_sheet_id, "rowIndex": 1, "columnIndex": 0},
+        }
+    }
+
+    # Apply all the updates to the sheet
+    service.spreadsheets().batchUpdate(
+        spreadsheetId=sheet_id,
+        body={"requests": [format_header_request, resize_columns_request, add_test_data_request]}
+    ).execute()
+
+    return True
+
+def format_sales_summary_sheet(service, sheet_id, sales_summary_sheet_id):
+    def header_format():
+        return {
+            "backgroundColor": {"red": 0.2, "green": 0.6, "blue": 0.6},  # Dark teal
+            "textFormat": {"bold": True, "fontFamily": "Arial", "fontSize": 12, "foregroundColor": {"red": 1, "green": 1, "blue": 1}},
+            "horizontalAlignment": "CENTER"
+        }
+
+    def currency_format():
+        return {
+            "numberFormat": {"type": "CURRENCY", "pattern": "$#,##0.00"}
+        }
+
+    # Define the header formatting
+    format_header_request = {
+        "updateCells": {
+            "rows": [{
+                "values": [
+                    {"userEnteredValue": {"stringValue": "Date Time"}, "userEnteredFormat": header_format()},
+                    {"userEnteredValue": {"stringValue": "Sale Total"}, "userEnteredFormat": header_format()},
+                ]
+            }],
+            "fields": "userEnteredValue,userEnteredFormat",
+            "start": {"sheetId": sales_summary_sheet_id, "rowIndex": 0, "columnIndex": 0},
+        }
+    }
+
+    # Resize columns
+    resize_columns_request = {
+        "updateDimensionProperties": {
+            "range": {"sheetId": sales_summary_sheet_id, "dimension": "COLUMNS", "startIndex": 0, "endIndex": 2},
+            "properties": {"pixelSize": 200},
+            "fields": "pixelSize",
+        }
+    }
+
+    # Test data aggregated by date-time
+    summary_test_data = [
+        ["2025-01-04 10:30:00", 20.00],
+        ["2025-01-04 11:00:00", 50.00],
+        ["2025-01-04 11:30:00", 15.00],
+        ["2025-01-04 12:34:00", 660.00],  # Combined totals for this timestamp
+    ]
+
+    test_data_requests = []
+    for row in summary_test_data:
+        values = [
+            {"userEnteredValue": {"stringValue": row[0]}},  # Date Time
+            {"userEnteredValue": {"numberValue": row[1]}, "userEnteredFormat": currency_format()},  # Sale Total
+        ]
+        test_data_requests.append({"values": values})
+
+    add_test_data_request = {
+        "updateCells": {
+            "rows": test_data_requests,
+            "fields": "userEnteredValue,userEnteredFormat",
+            "start": {"sheetId": sales_summary_sheet_id, "rowIndex": 1, "columnIndex": 0},
+        }
+    }
+
+    # Apply all the updates to the sheet
+    service.spreadsheets().batchUpdate(
+        spreadsheetId=sheet_id,
+        body={"requests": [format_header_request, resize_columns_request, add_test_data_request]}
+    ).execute()
+
+    return True

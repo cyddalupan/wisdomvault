@@ -187,3 +187,11 @@ def ai_process(user_profile, facebook_page_instance, first_run):
 
 def chat_test_page(request):
     return render(request, 'chat_test.html')
+
+
+def function_tester(request):
+    # Call the inventory setup function
+    inventory_setup.format_sheets("1u-Vy9b3KD4l3Ne2ZM3DXg8NmPxzv_QHJzXtzVPKeHu8")
+    
+    # Return a simple HTTP response to confirm it worked
+    return HttpResponse("Inventory setup function executed successfully.")
