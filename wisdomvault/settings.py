@@ -239,5 +239,10 @@ JAZZMIN_SETTINGS = {
         "kanbanapp.Board": "fas fa-th",
         "kanbanapp.Column": "fas fa-columns",
         "kanbanapp.Task": "fas fa-tasks",
+        "LearnHub.DigitalMarketing": "fas fa-chart-line",
+        "LearnHub.ChatHistory": "fas fa-comments",
+        "LearnHub.Course": "fas fa-book",
+        "LearnHub.Lesson": "fas fa-book-open",
+        "LearnHub.LessonProgress": "fas fa-tasks",
     }
 }
