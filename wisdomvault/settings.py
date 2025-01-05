@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     'kanbanapp',
     'page',
     'chat',
+    'LearnHub',
 ]
 
 MIDDLEWARE = [
