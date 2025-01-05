@@ -7,29 +7,19 @@
   <div>
     <strong>Overall Progress:</strong>
     <div class="progress mt-3">
-      <div 
-        class="progress-bar progress-bar-striped progress-bar-animated bg-success" 
-        role="progressbar" 
-        style="width: 75%;" 
-        aria-valuenow="75" 
-        aria-valuemin="0" 
-        aria-valuemax="100">
+      <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar"
+        style="width: 75%;" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100">
         75% Complete
       </div>
     </div>
   </div>
-  <br/>
+  <br />
   <div>
     <strong>Topic Progress:</strong>
     <div class="progress mt-3">
-      <div 
-        class="progress-bar progress-bar-striped progress-bar-animated bg-info" 
-        role="progressbar" 
-        style="width: 75%;" 
-        aria-valuenow="75" 
-        aria-valuemin="0" 
-        aria-valuemax="100">
-        75% Complete
+      <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar"
+        style="width: {{ topic_score }}%;" aria-valuenow="{{ topic_score }}" aria-valuemin="0" aria-valuemax="100">
+        {{ topic_score }}% Complete
       </div>
     </div>
   </div>
@@ -39,7 +29,7 @@
   <!-- AI Response Section -->
   {% if ai_response %}
   <div class="w-100 mb-3 p-3 border rounded bg-light">
-    <h2 class="border-bottom pb-2 border-success">LearnHub</h2>
+    <h2 class="border-bottom pb-2 border-success">KENSHI</h2>
     <p>{{ ai_response }}</p>
   </div>
   {% endif %}
@@ -50,8 +40,14 @@
     <form method="post" class="mt-3">
       {% csrf_token %}
       {% if form %}
-      {{ form|crispy }}
-      <button type="submit" class="btn btn-success mt-2">Submit</button>
+      <div class="row align-items-end">
+        <div class="col-md-9">
+          {{ form|crispy }}
+        </div>
+        <div class="col-md-3 text-end">
+          <button type="submit" class="btn btn-success w-100">Submit</button>
+        </div>
+      </div>
       {% else %}
       <p>Form is not available</p>
       {% endif %}

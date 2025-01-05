@@ -1,3 +1,4 @@
+import json
 import logging
 from django.contrib import admin
 from django.urls import path
@@ -25,27 +26,54 @@ class DigitalMarketingAdmin(admin.ModelAdmin):
         form = DigitalMarketingForm(request.POST or None)
         ai_response = ''
         latest_digital_marketing = None
+        message = ""
+        topic_score = 0
 
         if request.method == 'POST' and form.is_valid():
             digital_marketing_instance = form.save(commit=False)
             user_profile = request.user
+
             # TODO: Update getting course
             course = Course.objects.first()
-            digital_marketing_instance.ai_response = self.perform_digital_marketing(
+
+            # Call the AI function with user input and course details
+            response_json = self.perform_digital_marketing(
                 digital_marketing_instance.user_input, user_profile, course
             )
-            # TODO: perform_digital_marketing will return the json format but I need to only pass and display the message. 
-            # plus the json is a string a the moment so we need some adjustments
+
+            print("JSON TESTER", response_json)
+            
+            if not response_json:
+                response_json = '{"message": "No response received.", "topic_score": 0}'
+
+            # Parse the JSON response string
+            response_data = json.loads(response_json)
+
+            # Extract json
+            message = response_data.get('message', '')
+            topic_score = response_data.get('topic_score', 0)
+            print("message", message)
+            print("topic_score", topic_score)
+
+            # Store the message
+            digital_marketing_instance.ai_response = message
+
+            # Save the instance
             digital_marketing_instance.save()
+
+            # Use formatted output for rendering
             ai_response = digital_marketing_instance.formatted_output
         else:
+            # Load the latest digital marketing instance for display if it exists
             if DigitalMarketing.objects.exists():
                 latest_digital_marketing = DigitalMarketing.objects.latest('id')
 
+        # Pass context to the template
         context = dict(
             self.admin_site.each_context(request),
             form=form,
             ai_response=ai_response,
+            topic_score=topic_score,
             latest_digital_marketing=latest_digital_marketing,
         )
         return render(request, "admin/learnhub.html", context)
@@ -77,15 +105,22 @@ class DigitalMarketingAdmin(admin.ModelAdmin):
         messages = [
             {
                 "role": "system", 
-                "content": f"""
-                    first you are an API that returns json with format {{message: 'actual message here, can be markdown', topic_score: 1-100}}.
-                    second you are a teacher teaching the user about {course}, but focusing on the topic: {lesson}.
-                    You will occasionally give quizzes and score the user's mastery of the topic (focus score on the topic/lesson only). 
-                    Be strict in scoring and ensure the user is not cheating.
-                """
+                "content": (
+                    "You are an API that always returns a JSON object. "
+                    "The format must strictly adhere to: "
+                    '{"message": "string (can include markdown)", "topic_score": integer (1-100)}. '
+                    f"You are a teacher instructing the user about {course}, focusing on the topic: {lesson.name}. "
+                    "Use taglish but depends on the user"
+                    "You quizzes every 3 conversation to assess the user's understanding."
+                    "Your scoring for topic_score must be strict and ensure there is no cheating."
+                    "topic_score sould starts at 1 and move up as the user improves"
+                    f"before you give 100 points on topic_score you make sure that the user is expert on the topic: {lesson.name}"
+                    "Output only the JSON object without any additional text."
+                )
             },
         ]
 
+        print("raw message", messages)
         
         # Include previous chat history in the conversation
         for chat in chat_history:
@@ -99,12 +134,15 @@ class DigitalMarketingAdmin(admin.ModelAdmin):
                 messages=messages,
             )
             ai_reply = completion.choices[0].message.content
+            print("raw ai_reply", ai_reply)
 
             latest_chat.reply = ai_reply
             latest_chat.save()
             return ai_reply
         except Exception as e:
-            raise e
+            print(f"Error in AI response: {e}")
+            # Return a fallback JSON if there's an error
+            return '{"message": "Sorry, something went wrong.", "topic_score": 0}'
 
 # Register the model and admin class
 admin.site.register(DigitalMarketing, DigitalMarketingAdmin)
