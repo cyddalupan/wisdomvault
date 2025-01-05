@@ -43,13 +43,11 @@ class Lesson(models.Model):
 class LessonProgress(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, null=True)
     completed = models.BooleanField(default=False)
-    completed_at = models.DateTimeField(blank=True, null=True)
 
     class Meta:
-        unique_together = ('user', 'lesson')  # Prevent duplicate progress entries for the same lesson.
-        ordering = ['completed_at']  # Optional: Order progress by completion time.
+        unique_together = ('user', 'lesson')
 
     def __str__(self):
         return f"Lesson Progress: {self.user.username} - {self.lesson.name} ({'Completed' if self.completed else 'In Progress'})"

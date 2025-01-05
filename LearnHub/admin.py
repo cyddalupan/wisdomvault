@@ -26,22 +26,34 @@ class DigitalMarketingAdmin(admin.ModelAdmin):
         form = DigitalMarketingForm(request.POST or None)
         ai_response = ''
         latest_digital_marketing = None
+        user_progress = None
         message = ""
         topic_score = 0
+        overall_score = 0
 
         if request.method == 'POST' and form.is_valid():
+
             digital_marketing_instance = form.save(commit=False)
             user_profile = request.user
 
-            # TODO: Update getting course
             course = Course.objects.first()
+
+            # Get all lesson from the course
+            lessons = Lesson.objects.filter(course=course).order_by('order')
+            total_lessons = lessons.count()
+            user_progress = LessonProgress.objects.filter(user=user_profile, course=course).first()
+            
+            if user_progress:
+                current_lesson_order = user_progress.lesson.order
+            else:
+                current_lesson_order = 0 
+            if total_lessons > 0:
+                overall_score = (current_lesson_order / total_lessons) * 95
 
             # Call the AI function with user input and course details
             response_json = self.perform_digital_marketing(
                 digital_marketing_instance.user_input, user_profile, course
             )
-
-            print("JSON TESTER", response_json)
             
             if not response_json:
                 response_json = '{"message": "No response received.", "topic_score": 0}'
@@ -52,8 +64,27 @@ class DigitalMarketingAdmin(admin.ModelAdmin):
             # Extract json
             message = response_data.get('message', '')
             topic_score = response_data.get('topic_score', 0)
-            print("message", message)
-            print("topic_score", topic_score)
+            topic_score = 95
+
+            # Ensure topic_score is treated as a number
+            if isinstance(topic_score, str):  
+                topic_score = float(topic_score)
+            
+            if topic_score >= 95 and not user_progress.completed:
+                if user_progress:
+                    # Get the next lesson based on the order
+                    next_lesson = lessons.filter(order__gt=user_progress.lesson.order).first()
+
+                    if next_lesson:
+                        # Update user progress to the next lesson
+                        user_progress.lesson = next_lesson
+                        user_progress.completed = False
+                        user_progress.save()
+                        topic_score = 1
+                    else:
+                        # If no more lessons, (user has completed the course)
+                        user_progress.completed = True
+                        user_progress.save()
 
             # Store the message
             digital_marketing_instance.ai_response = message
@@ -74,8 +105,20 @@ class DigitalMarketingAdmin(admin.ModelAdmin):
             form=form,
             ai_response=ai_response,
             topic_score=topic_score,
+            overall_score=overall_score,
             latest_digital_marketing=latest_digital_marketing,
         )
+        
+        # Print done when done
+        if user_progress and user_progress.completed:
+            context = dict(
+                self.admin_site.each_context(request),
+                form=form,
+                ai_response="Congratulations",
+                topic_score=100,
+                overall_score=100,
+                latest_digital_marketing=latest_digital_marketing,
+            )
         return render(request, "admin/learnhub.html", context)
 
     def changelist_view(self, request, extra_context=None):
@@ -100,8 +143,6 @@ class DigitalMarketingAdmin(admin.ModelAdmin):
         chat_history = ChatHistory.objects.filter(user=user_profile, lesson=lesson).order_by('-timestamp')[:20]
         chat_history = list(chat_history)[::-1]
 
-        print("HISTORY", chat_history)
-
         messages = [
             {
                 "role": "system", 
@@ -119,8 +160,6 @@ class DigitalMarketingAdmin(admin.ModelAdmin):
                 )
             },
         ]
-
-        print("raw message", messages)
         
         # Include previous chat history in the conversation
         for chat in chat_history:
@@ -134,7 +173,6 @@ class DigitalMarketingAdmin(admin.ModelAdmin):
                 messages=messages,
             )
             ai_reply = completion.choices[0].message.content
-            print("raw ai_reply", ai_reply)
 
             latest_chat.reply = ai_reply
             latest_chat.save()
@@ -184,8 +222,7 @@ class LessonAdmin(admin.ModelAdmin):
 
 @admin.register(LessonProgress)
 class LessonProgressAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'course', 'lesson', 'completed', 'completed_at')
-    list_filter = ('course', 'completed', 'completed_at')
+    list_display = ('id', 'user', 'course', 'lesson', 'completed')
+    list_filter = ('course', 'completed')
     search_fields = ('user__username', 'course__name', 'lesson__name')
-    readonly_fields = ('completed_at',)
     list_editable = ('completed',)
