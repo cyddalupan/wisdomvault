@@ -3,7 +3,7 @@ import logging
 from django.contrib import admin
 from django.urls import path
 from django.shortcuts import render
-from .models import DigitalMarketing, Python
+from .models import Angular, DigitalMarketing, Python, SoftwareQa
 from .forms import LearnHubForm
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -14,6 +14,7 @@ load_dotenv()
 client = OpenAI()
 
 def learn_hub(self, request, course):
+    user_profile = request.user
     form = LearnHubForm(request.POST or None)
     ai_response = ''
     latest_learn_hub = None
@@ -21,24 +22,22 @@ def learn_hub(self, request, course):
     message = ""
     topic_score = 0
     overall_score = 1
+    
+    # Get all lesson from the course
+    lessons = Lesson.objects.filter(course=course).order_by('order')
+    total_lessons = lessons.count()
+    user_progress = LessonProgress.objects.filter(user=user_profile, course=course).first()
+    
+    if user_progress:
+        current_lesson_order = user_progress.lesson.order
+    else:
+        current_lesson_order = 0 
+    if total_lessons > 0:
+        overall_score = (current_lesson_order / total_lessons) * 95
+
+    learn_hub_instance = form.save(commit=False)
 
     if request.method == 'POST' and form.is_valid():
-
-        learn_hub_instance = form.save(commit=False)
-        user_profile = request.user
-
-        # Get all lesson from the course
-        lessons = Lesson.objects.filter(course=course).order_by('order')
-        total_lessons = lessons.count()
-        user_progress = LessonProgress.objects.filter(user=user_profile, course=course).first()
-        
-        if user_progress:
-            current_lesson_order = user_progress.lesson.order
-        else:
-            current_lesson_order = 0 
-        if total_lessons > 0:
-            overall_score = (current_lesson_order / total_lessons) * 95
-
         # Call the AI function with user input and course details
         response_json = perform_learn_hub(
             self, learn_hub_instance.user_input, user_profile, course
@@ -86,6 +85,17 @@ def learn_hub(self, request, course):
         # Load the latest digital marketing instance for display if it exists
         if DigitalMarketing.objects.exists():
             latest_learn_hub = DigitalMarketing.objects.latest('id')
+            if user_progress:
+                last_chat = ChatHistory.objects.filter(user=user_profile, lesson=user_progress.lesson).order_by('-timestamp').first()
+                if last_chat:
+                    response_data = json.loads(last_chat.reply)
+                    message = response_data.get('message', '')
+                    topic_score = response_data.get('topic_score', 0)
+                    learn_hub_instance.ai_response = message
+                    ai_response = learn_hub_instance.formatted_output
+
+    # Empty input text value
+    form = LearnHubForm()
 
     # Pass context to the template
     context = dict(
@@ -187,6 +197,28 @@ class PythonAdmin(admin.ModelAdmin):
         return learn_hub(self, request, course)
 # Register the model and admin class
 admin.site.register(Python, PythonAdmin)
+
+
+# Software QA
+class SoftwareQaAdmin(admin.ModelAdmin):
+    change_list_template = "admin/learnhub.html"
+    def changelist_view(self, request, extra_context=None):
+        course_name = "Software QA"
+        course = Course.objects.filter(name=course_name).first()
+        return learn_hub(self, request, course)
+# Register the model and admin class
+admin.site.register(SoftwareQa, SoftwareQaAdmin)
+
+
+# Angular
+class AngularAdmin(admin.ModelAdmin):
+    change_list_template = "admin/learnhub.html"
+    def changelist_view(self, request, extra_context=None):
+        course_name = "Angular"
+        course = Course.objects.filter(name=course_name).first()
+        return learn_hub(self, request, course)
+# Register the model and admin class
+admin.site.register(Angular, AngularAdmin)
 
 
 

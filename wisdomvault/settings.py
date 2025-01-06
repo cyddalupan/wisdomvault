@@ -245,5 +245,7 @@ JAZZMIN_SETTINGS = {
         "LearnHub.Lesson": "fas fa-book-open",
         "LearnHub.LessonProgress": "fas fa-tasks",
         "LearnHub.Python": "fas fa-terminal",
+        "LearnHub.SoftwareQa": "fas fa-vial",
+        "LearnHub.Angular": "fas fa-cubes",
     }
 }
