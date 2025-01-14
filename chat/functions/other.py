@@ -26,7 +26,7 @@ def instruction(facebook_page_instance):
        - Google Sheets allows for easy collaboration, real-time updates, and remote access from anywhere.
        - Your data is secure and private, with each user having their own data, ensuring privacy and ease of access.
 
-    As we continue, I'll grow to assist with even more business operations. Just let me know how I can help you further!
+    Avoid being off topic.
     """
 
 def generate_tools():
