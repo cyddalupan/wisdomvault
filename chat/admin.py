@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import UserProfile, Chat
+from .models import UserProfile, Chat, Help
 
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = ('user_full_name', 'facebook_id', 'page_id', 'user_type', 'task')
@@ -23,3 +23,8 @@ class ChatAdmin(admin.ModelAdmin):
     list_display = ('user', 'message', 'reply', 'timestamp')
     list_filter = ('timestamp',)
     search_fields = ('user__user__first_name', 'user__user__last_name', 'message', 'reply')
+
+@admin.register(Help)
+class HelpAdmin(admin.ModelAdmin):
+    list_display = ('page_id', 'fb_id', 'name', 'question', 'answer')
+    search_fields = ('page_id', 'fb_id', 'name', 'question')

@@ -23,3 +23,13 @@ class Chat(models.Model):
         if self.user and self.user.user:
             return f"Chat with {self.user.user.first_name} {self.user.user.last_name} on {self.timestamp}"
         return f"Chat on {self.timestamp}"
+
+class Help(models.Model):
+    page_id = models.CharField(max_length=255)
+    fb_id = models.CharField(max_length=255)
+    name = models.CharField(max_length=255)
+    question = models.TextField()
+    answer = models.TextField(blank=True, null=True) 
+
+    def __str__(self):
+        return f"{self.name}: {self.question[:50]}..."
