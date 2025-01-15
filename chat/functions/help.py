@@ -26,8 +26,10 @@ def tool_function(tool_calls, user_profile):
         arguments = tool_call.function.arguments
         arguments_dict = json.loads(arguments)
 
-        if function_name == "change_topic":
-            new_topic = arguments_dict.get('new_topic')
-            user_profile.task = new_topic
-            user_profile.save()
+        if function_name == "help":
+            question = arguments_dict.get('question')
+            # TODO: Logic for saving question
+            return question
+            # user_profile.task = question
+            # user_profile.save()
     return None

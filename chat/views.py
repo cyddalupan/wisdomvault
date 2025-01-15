@@ -165,6 +165,8 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         if tool_calls:
             if any(tool_call.function.name == "change_topic" for tool_call in tool_calls):
                 response_content = change_topic.tool_function(tool_calls, user_profile)
+            if any(tool_call.function.name == "help" for tool_call in tool_calls):
+                response_content = help.tool_function(tool_calls, user_profile)
             else:
                 response_content = tool_function(tool_calls, user_profile, facebook_page_instance)
 

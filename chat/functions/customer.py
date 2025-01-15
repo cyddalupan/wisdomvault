@@ -5,7 +5,7 @@ from google.oauth2 import service_account
 
 def instruction(facebook_page_instance, target_row=None):
     business_info = facebook_page_instance.info
-    marketing_message = "Being Proactive in Marketing the user about our product or business. If you do know what to say, never assume or invent, just trigger the help function."
+    marketing_message = "Marketing the user about our product or business. Prioritize Marketing rather that asking. If you do know what to say, never assume or invent, just trigger the help function."
     # TODO: Add inventories for selling
     # TODO: Add Additional info
 
