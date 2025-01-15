@@ -4,7 +4,7 @@ import traceback
 import requests
 from openai import OpenAI
 from django.http import JsonResponse, HttpResponse
-from chat.functions import change_topic, inventory, inventory_setup, other, pos, verify_user
+from chat.functions import change_topic, inventory, inventory_setup, other, pos, verify_user, customer, help
 from chat.functions.task_utils import identify_task
 from page.models import FacebookPage
 from .models import Chat, UserProfile
@@ -124,6 +124,10 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         instruction = pos.instruction
         tools = pos.generate_tools()
         tool_function = pos.tool_function
+    elif user_profile.task == "customer":
+        instruction = customer.instruction
+        tools = customer.generate_tools()
+        tool_function = customer.tool_function
 
     # Build AI message with instruction based on task
     messages = [
@@ -141,6 +145,11 @@ def ai_process(user_profile, facebook_page_instance, first_run):
     if first_run and (user_profile.user_type == 'admin' or user_profile.task != 'customer'):
         tools = tools or []  # Ensure tools is initialized if None
         tools.append(change_topic.generate_tools())
+    
+    # Add tool for customer when the system does not know what to say
+    if first_run and (user_profile.user_type != 'admin'):
+        tools = tools or []  # Ensure tools is initialized if None
+        tools.append(help.generate_tools())
 
     # Attempt to generate a completion using the OpenAI API
     try:
