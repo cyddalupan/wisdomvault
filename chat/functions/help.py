@@ -6,7 +6,7 @@ def generate_tools():
         "type": "function",
         "function": {
             "name": "help",
-            "description": "if the system does not know what to say, ask admin what to say",
+            "description": "if the system does not know what to say, use this to ask admin what to say",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -28,8 +28,13 @@ def tool_function(tool_calls, user_profile):
 
         if function_name == "help":
             question = arguments_dict.get('question')
-            # TODO: Logic for saving question
-            return question
-            # user_profile.task = question
-            # user_profile.save()
+            # Save the question into the Help model
+            help_entry = Help.objects.create(
+                page_id=user_profile.page_id,
+                fb_id=user_profile.facebook_id,
+                name=user_profile.name,
+                question=question,
+                answer=None  # Leave blank initially; answer can be filled later
+            )
+            return f"Your question has been recorded: {question}"
     return None
