@@ -1,3 +1,5 @@
+import requests
+
 def send_message(recipient_id, message_text, facebook_page_instance):
     if facebook_page_instance.token == "antoken":
         print("recipient_id", recipient_id)
