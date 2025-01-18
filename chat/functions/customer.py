@@ -5,12 +5,17 @@ from google.oauth2 import service_account
 
 def instruction(facebook_page_instance, target_row=None):
     business_info = facebook_page_instance.info
-    marketing_message = "Promote our product or business proactively and engage the user to keep the conversation going, rather than just responding. If you do know what to say, never assume or invent, just trigger the help function."
+    additional_info = facebook_page_instance.additional_info
+    marketing_message = (
+        "Focus on promoting our product or business actively while engaging the user in a meaningful way to keep the conversation interactive. "
+        "If you are unsure or do not have accurate information, never assume or invent anything. Instead, trigger the help function immediately for assistance."
+    )
+
     # TODO: Add inventories for selling
     # TODO: Add Additional info
 
     # Combine business info with the marketing message
-    return f"{marketing_message}\nInfo: {business_info}"
+    return f"{marketing_message}\nInfo: {business_info}\nAdditional Info: {additional_info}"
 
 
 def generate_tools():

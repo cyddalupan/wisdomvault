@@ -1,6 +1,12 @@
 import json
 from chat.models import Help, UserProfile, Chat
 from chat.utils import send_message
+from openai import OpenAI
+from dotenv import load_dotenv
+
+load_dotenv()
+
+client = OpenAI()
 
 
 def instruction(facebook_page_instance):
@@ -66,8 +72,8 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
                 # Loop through all admins and send them a message
                 for admin in admin_users:
                     print("admin.facebook_id",admin.facebook_id)
-                    print("user_profile.page_id",user_profile.page_id)
-                    if str(admin.facebook_id).strip() != str(user_profile.page_id).strip():
+                    print("user_profile.page_id",user_profile.facebook_id)
+                    if str(admin.facebook_id).strip() != str(user_profile.facebook_id).strip():
                         # Save the incoming message to the Chat model
                         Chat.objects.create(user=admin, message='', reply=message_admin)
                         send_message(admin.facebook_id, message_admin, facebook_page_instance)
@@ -85,9 +91,9 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
 
                 # Prepare messages to summarize and update the additional information
                 messages = [
-                    {"role": "system", "content": "Update summarized additional information. Combine with the new question and answer."},
-                    {"role": "system", "content": f"Current Additional Information: '{additional_info}'"},
-                    {"role": "system", "content": f"New Question: '{new_question}' \nNew Answer: '{new_answer}'"},
+                    {"role": "system", "content": "You are a summarizer. Combine the 'Current Information' with the New 'Q&A Data'. no markdown just sentence."},
+                    {"role": "user", "content": f"Current Information: '{additional_info}'"},
+                    {"role": "user", "content": f"Q&A Data: Customer Question: '{new_question}'. \nAnswer: '{new_answer}'"},
                 ]
 
                 try:

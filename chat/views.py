@@ -104,7 +104,6 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         print("instruction", instruction(facebook_page_instance))
         print("user_profile.task", user_profile.task)
         if not instruction(facebook_page_instance):
-            print("ADMIN")
             if user_profile.task == "verify_user":
                 instruction = verify_user.instruction
                 tools = verify_user.generate_tools()
@@ -114,7 +113,6 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                 tools = inventory_setup.generate_tools()
                 tool_function = inventory_setup.tool_function
             elif user_profile.task == "inventory":
-                print("INSIDE INVENTORY")
                 instruction = inventory.instruction
                 tools = inventory.generate_tools()
                 tool_function = inventory.tool_function
@@ -132,8 +130,6 @@ def ai_process(user_profile, facebook_page_instance, first_run):
             tools = customer.generate_tools()
             tool_function = customer.tool_function
 
-    print("facebook_page_instance", facebook_page_instance)
-    print("instruction(facebook_page_instance)", instruction(facebook_page_instance))
     # Build AI message with instruction based on task
     messages = [
         {"role": "system", "content": "Your name is KENSHI (Kiosk and Easy Navigation System for Handling Inventory). Talk in taglish. Keep reply short. Go straight to the point. Focus only on: " + instruction(facebook_page_instance)}
