@@ -20,9 +20,13 @@ admin.site.register(UserProfile, UserProfileAdmin)
 
 @admin.register(Chat)
 class ChatAdmin(admin.ModelAdmin):
-    list_display = ('user__name', 'message', 'reply', 'timestamp')
+    list_display = ('get_user_name', 'message', 'reply', 'timestamp')
     list_filter = ('timestamp',)
     search_fields = ('user__name', 'message', 'reply')
+
+    @admin.display(description='User Name')
+    def get_user_name(self, obj):
+        return obj.user.name if obj.user else "No Name"
 
 @admin.register(Help)
 class HelpAdmin(admin.ModelAdmin):
