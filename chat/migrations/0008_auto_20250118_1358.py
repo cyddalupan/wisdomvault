@@ -1,22 +1,25 @@
-from django.db import migrations
-from django.db import connection
+from django.db import migrations, connection
+from django.db import transaction
 
 def apply_character_set(apps, schema_editor):
-    # MySQL specific
+    # Check if the database is MySQL
     if connection.vendor == 'mysql':
-        schema_editor.execute("ALTER DATABASE wisdomvault CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;")
-        schema_editor.execute("ALTER TABLE chat_chat CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;")
-        schema_editor.execute("ALTER TABLE chat_chat CHANGE reply reply TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;")
-    # SQLite doesn't support ALTER DATABASE or CONVERT TO CHARACTER SET
-    # So no operations are performed for SQLite
+        # Only run DDL outside of a transaction for MySQL
+        with connection.cursor() as cursor:
+            cursor.execute("ALTER DATABASE wisdomvault CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;")
+            cursor.execute("ALTER TABLE chat_chat CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;")
+            cursor.execute("ALTER TABLE chat_chat CHANGE reply reply TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;")
+    # SQLite doesn't support ALTER DATABASE or CONVERT TO CHARACTER SET, so do nothing here.
 
 def reverse_character_set(apps, schema_editor):
-    # MySQL specific reverse
+    # Check if the database is MySQL
     if connection.vendor == 'mysql':
-        schema_editor.execute("ALTER DATABASE wisdomvault CHARACTER SET utf8 COLLATE utf8_general_ci;")
-        schema_editor.execute("ALTER TABLE chat_chat CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci;")
-        schema_editor.execute("ALTER TABLE chat_chat CHANGE reply reply TEXT CHARACTER SET utf8 COLLATE utf8_general_ci;")
-    # No reverse operation for SQLite as no changes were made
+        # Only run DDL outside of a transaction for MySQL
+        with connection.cursor() as cursor:
+            cursor.execute("ALTER DATABASE wisdomvault CHARACTER SET utf8 COLLATE utf8_general_ci;")
+            cursor.execute("ALTER TABLE chat_chat CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci;")
+            cursor.execute("ALTER TABLE chat_chat CHANGE reply reply TEXT CHARACTER SET utf8 COLLATE utf8_general_ci;")
+    # SQLite doesn't support reverse DDL operations, so do nothing here.
 
 class Migration(migrations.Migration):
 
@@ -25,5 +28,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        # Run DDL operations outside of a transaction for MySQL and SQLite
         migrations.RunPython(apply_character_set, reverse_character_set),
     ]
