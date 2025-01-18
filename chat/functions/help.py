@@ -8,7 +8,7 @@ def generate_tools():
         "type": "function",
         "function": {
             "name": "help",
-            "description": "if the system does not know what to say on the recent message, use this to ask admin what to say",
+            "description": "if the system does not know what to say, use this to ask admin what to say",
             "parameters": {
                 "type": "object",
                 "properties": {

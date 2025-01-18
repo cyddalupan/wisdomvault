@@ -11,8 +11,8 @@ class UserProfile(models.Model):
 
     def __str__(self):
         if self.user:
-            return f"{self.user.first_name} {self.user.last_name}"
-        return "UserProfile with no linked User"
+            return self.name
+        return "No Name"
 
 class Chat(models.Model):
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)

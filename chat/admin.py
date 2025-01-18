@@ -2,10 +2,10 @@ from django.contrib import admin
 from .models import UserProfile, Chat, Help
 
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ('user_full_name', 'facebook_id', 'page_id', 'user_type', 'task')
-    search_fields = ('user__first_name', 'user__last_name', 'facebook_id', 'page_id', 'task')
+    list_display = ('name', 'facebook_id', 'page_id', 'user_type', 'task')
+    search_fields = ('name', 'facebook_id', 'page_id', 'task')
     list_filter = ('task', 'user_type')
-    ordering = ('user__first_name', 'user__last_name', 'user_type')
+    ordering = ('name', 'user_type')
 
     def user_full_name(self, obj):
         # Check if the user field is not None
@@ -20,9 +20,9 @@ admin.site.register(UserProfile, UserProfileAdmin)
 
 @admin.register(Chat)
 class ChatAdmin(admin.ModelAdmin):
-    list_display = ('user', 'message', 'reply', 'timestamp')
+    list_display = ('user__name', 'message', 'reply', 'timestamp')
     list_filter = ('timestamp',)
-    search_fields = ('user__user__first_name', 'user__user__last_name', 'message', 'reply')
+    search_fields = ('user__name', 'message', 'reply')
 
 @admin.register(Help)
 class HelpAdmin(admin.ModelAdmin):

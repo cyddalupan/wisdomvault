@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Facebook Messenger Test</title>
     <script>
-        function sendMessage() {
-            const message = document.getElementById('message').value;
+        function sendMessage(sendID) {
+            const message = document.getElementById('message_' + sendID).value;
             if (!message) {
                 alert('Please enter a message');
                 return;
@@ -23,10 +23,7 @@
                     entry: [{
                         id: '123456789',  // Sample page ID
                         messaging: [{
-                            sender: { 
-                                //id: '987654321' 
-                                id: '332211'
-                            },  // Sample user Facebook ID
+                            sender: { id: sendID },  // User or admin ID
                             message: { text: message }
                         }]
                     }]
@@ -35,22 +32,39 @@
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'message processed') {
-                    document.getElementById('reply').innerText = 'Reply from bot: ' + data.reply;
+                    document.getElementById('reply_' + sendID).innerText = 'Reply from bot: ' + data.reply;
                 } else {
-                    document.getElementById('reply').innerText = 'Error processing message';
+                    document.getElementById('reply_' + sendID).innerText = 'Error processing message';
                 }
             })
             .catch(error => {
-                document.getElementById('reply').innerText = 'Error: ' + error;
+                document.getElementById('reply_' + sendID).innerText = 'Error: ' + error;
             });
         }
     </script>
 </head>
 <body>
     <h1>Test Facebook Messenger Chat</h1>
-    <label for="message">Message:</label>
-    <input type="text" id="message" placeholder="Type a message here...">
-    <button onclick="sendMessage()">Send</button>
-    <p id="reply"></p>
+
+    <!-- Left side for User -->
+    <div style="float:left; width: 45%; margin-right: 10%;">
+        <h2>User (ID: 987654321)</h2>
+        <label for="message_987654321">Message:</label>
+        <input type="text" id="message_987654321" placeholder="Type a message here...">
+        <button onclick="sendMessage('987654321')">Send (User)</button>
+        <p id="reply_987654321"></p>
+    </div>
+
+    <!-- Right side for Admin -->
+    <div style="float:left; width: 45%;">
+        <h2>Admin (ID: 332211)</h2>
+        <label for="message_332211">Message:</label>
+        <input type="text" id="message_332211" placeholder="Type a message here...">
+        <button onclick="sendMessage('332211')">Send (Admin)</button>
+        <p id="reply_332211"></p>
+    </div>
+
+    <!-- Clear floats -->
+    <div style="clear: both;"></div>
 </body>
 </html>

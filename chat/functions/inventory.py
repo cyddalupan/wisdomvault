@@ -11,6 +11,7 @@ cached_data = {
 }
 
 def instruction(facebook_page_instance, target_row=None):
+    print("inventory activated")
     global cached_data  # Use the global variable
 
     # Check if the cached data is older than 20 seconds

@@ -74,7 +74,32 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
 
                 # Send Message to user
                 answer_to_customer = f"Here's what my manager says: {answer} 🤝🙂"
+                userInstance = UserProfile.objects.get(facebook_id=latest_help.fb_id)
+                Chat.objects.create(user=userInstance, message='', reply=answer_to_customer)
                 send_message(latest_help.fb_id, answer_to_customer, facebook_page_instance)
+
+                # Update additional info
+                additional_info = facebook_page_instance.additional_info
+                new_question = latest_help.question
+                new_answer = answer
+
+                # Prepare messages to summarize and update the additional information
+                messages = [
+                    {"role": "system", "content": "Update summarized additional information. Combine with the new question and answer."},
+                    {"role": "system", "content": f"Current Additional Information: '{additional_info}'"},
+                    {"role": "system", "content": f"New Question: '{new_question}' \nNew Answer: '{new_answer}'"},
+                ]
+
+                try:
+                    # Request a completion from the model
+                    completion = client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=messages,
+                    )
+                    facebook_page_instance.additional_info = completion.choices[0].message.content
+                    facebook_page_instance.save()
+                except Exception as e:
+                    print(f"Error: {e}")
 
                 return "✅ Thank you for giving an answer 🙏"
             else:
