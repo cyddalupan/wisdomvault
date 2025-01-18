@@ -117,6 +117,9 @@ if ENVIRONMENT == 'production':
                 'PASSWORD': os.getenv('MYSQL_PASSWORD'),
                 'HOST': os.getenv('MYSQL_HOST', 'localhost'),
                 'PORT': os.getenv('MYSQL_PORT', '3306'),
+                'OPTIONS': {
+                    'charset': 'utf8mb4',
+                },
             }
         }
 
