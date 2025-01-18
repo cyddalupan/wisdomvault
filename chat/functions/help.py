@@ -1,6 +1,6 @@
 import json
 from chat.utils import send_message
-from chat.models import Help, UserProfile
+from chat.models import Help, UserProfile, Chat
 from page.models import FacebookPage
 
 def generate_tools():
@@ -8,7 +8,7 @@ def generate_tools():
         "type": "function",
         "function": {
             "name": "help",
-            "description": "if the system does not know what to say, use this to ask admin what to say",
+            "description": "if the system does not know what to say on the recent message, use this to ask admin what to say",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -41,7 +41,7 @@ def tool_function(tool_calls, user_profile):
             )
 
             # Message to notify admins
-            message_admin = f"User {user_profile.name} asked: '{question}'. What should I say?"
+            message_admin = f"❓ User {user_profile.name} asked: '{question}'\n💬 What should I say? 🤔"
             facebook_page_instance = FacebookPage.objects.get(page_id=user_profile.page_id)
 
             # Fetch all admins for the page
@@ -49,7 +49,9 @@ def tool_function(tool_calls, user_profile):
 
             # Loop through all admins and send them a message
             for admin in admin_users:
+                # Save the incoming message to the Chat model
+                Chat.objects.create(user=admin, message='', reply=message_admin)
                 send_message(admin.facebook_id, message_admin, facebook_page_instance)
 
-            return "Let me check with my manager, wait lang po."
+            return "⏳ Let me check with my manager. Wait lang po 🙏"
     return None

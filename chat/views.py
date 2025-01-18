@@ -4,7 +4,7 @@ import traceback
 import requests
 from openai import OpenAI
 from django.http import JsonResponse, HttpResponse
-from chat.functions import change_topic, inventory, inventory_setup, other, pos, verify_user, customer, help
+from chat.functions import change_topic, inventory, inventory_setup, other, pos, verify_user, customer, help, escalate
 from chat.functions.task_utils import identify_task
 from page.models import FacebookPage
 from .models import Chat, UserProfile
@@ -48,6 +48,7 @@ def save_facebook_chat(request):
                         defaults={
                             'facebook_id': sender_id,
                             'page_id': page_id,
+                            'user_type': 'customer',
                             'task': 'customer',
                         }
                     )
@@ -95,45 +96,52 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         user_profile.save()
 
     # Determine the task and set up instructions, tools, and functions
-    if user_profile.task == "verify_user":
-        instruction = verify_user.instruction
-        tools = verify_user.generate_tools()
-        tool_function = verify_user.tool_function
-    elif user_profile.task == "inventory_setup":
-        instruction = inventory_setup.instruction
-        tools = inventory_setup.generate_tools()
-        tool_function = inventory_setup.tool_function
-    elif user_profile.task == "inventory":
-        instruction = inventory.instruction
-        tools = inventory.generate_tools()
-        tool_function = inventory.tool_function
-    elif user_profile.task == "other":
-        instruction = other.instruction
-        tools = other.generate_tools()
-        tool_function = other.tool_function
-    elif user_profile.task == "pos":
-        instruction = pos.instruction
-        tools = pos.generate_tools()
-        tool_function = pos.tool_function
-    elif user_profile.task == "customer":
-        instruction = customer.instruction
-        tools = customer.generate_tools()
-        tool_function = customer.tool_function
+    if user_profile.user_type == 'admin':
+        # Make sure there are no escalation at the moment
+        instruction = escalate.instruction
+        tools = escalate.generate_tools()
+        tool_function = escalate.tool_function
+        if not instruction:
+            if user_profile.task == "verify_user":
+                instruction = verify_user.instruction
+                tools = verify_user.generate_tools()
+                tool_function = verify_user.tool_function
+            elif user_profile.task == "inventory_setup":
+                instruction = inventory_setup.instruction
+                tools = inventory_setup.generate_tools()
+                tool_function = inventory_setup.tool_function
+            elif user_profile.task == "inventory":
+                instruction = inventory.instruction
+                tools = inventory.generate_tools()
+                tool_function = inventory.tool_function
+            elif user_profile.task == "other":
+                instruction = other.instruction
+                tools = other.generate_tools()
+                tool_function = other.tool_function
+            elif user_profile.task == "pos":
+                instruction = pos.instruction
+                tools = pos.generate_tools()
+                tool_function = pos.tool_function
+    if user_profile.user_type == 'customer':
+        if user_profile.task == "customer":
+            instruction = customer.instruction
+            tools = customer.generate_tools()
+            tool_function = customer.tool_function
 
     # Build AI message with instruction based on task
     messages = [
-        {"role": "system", "content": "Your name is KENSHI (Kiosk and Easy Navigation System for Handling Inventory). Talk in taglish. keep reply short. give instructions or ask questions one at a time"},
-        {"role": "system", "content": f"Focus on: {instruction(facebook_page_instance)}"}
+        {"role": "system", "content": "Your name is KENSHI (Kiosk and Easy Navigation System for Handling Inventory). Talk in taglish. Keep reply short. Go straight to the point. Focus only on: " + instruction(facebook_page_instance)}
     ]
 
     # Include previous chat history in the conversation
     for chat in chat_history:
-        messages.append({"role": "user", "content": chat.message})
+        if chat.message and chat.message != "":
+            messages.append({"role": "user", "content": chat.message})
         if chat.reply and chat.reply != "":
-            messages.append({"role": "system", "content": chat.reply})
+            messages.append({"role": "assistant", "content": chat.reply})
 
     # Add tool for changing topic if user is admin or user is not customer
-    if first_run and (user_profile.user_type == 'admin' or user_profile.task != 'customer'):
+    if first_run and user_profile.user_type == 'admin':
         tools = tools or []  # Ensure tools is initialized if None
         tools.append(change_topic.generate_tools())
     
@@ -143,6 +151,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         tools.append(help.generate_tools())
 
     # Attempt to generate a completion using the OpenAI API
+    print("messages", messages)
     try:
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
