@@ -165,17 +165,17 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
             if confirmation and row_number:
                 is_success = delete_row(facebook_page_instance.sheet_id, row_number)
                 if is_success:
-                    return "Row Deleted. What else can I help you?"
+                    return "✅"
         
         if function_name == "add_row":
             is_success = add_row(facebook_page_instance.sheet_id, arguments_dict)
             if is_success:
-                return "Row Added. What else can I help you?"
+                return "✅"
         
         if function_name == "edit_row":
             is_success = edit_row(facebook_page_instance.sheet_id, arguments_dict)
             if is_success:
-                return "Row Updated. What else can I help you?"
+                return "✅"
     return None
 
 def get_service():

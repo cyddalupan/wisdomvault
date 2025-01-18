@@ -1,5 +1,7 @@
 import json
-
+from chat.utils import send_message
+from chat.models import Help, UserProfile
+from page.models import FacebookPage
 
 def generate_tools():
     return {
@@ -28,6 +30,7 @@ def tool_function(tool_calls, user_profile):
 
         if function_name == "help":
             question = arguments_dict.get('question')
+
             # Save the question into the Help model
             help_entry = Help.objects.create(
                 page_id=user_profile.page_id,
@@ -36,5 +39,17 @@ def tool_function(tool_calls, user_profile):
                 question=question,
                 answer=None  # Leave blank initially; answer can be filled later
             )
-            return f"Your question has been recorded: {question}"
+
+            # Message to notify admins
+            message_admin = f"User {user_profile.name} asked: '{question}'. What should I say?"
+            facebook_page_instance = FacebookPage.objects.get(page_id=user_profile.page_id)
+
+            # Fetch all admins for the page
+            admin_users = UserProfile.objects.filter(page_id=user_profile.page_id, user_type='admin')
+
+            # Loop through all admins and send them a message
+            for admin in admin_users:
+                send_message(admin.facebook_id, message_admin, facebook_page_instance)
+
+            return "Let me check with my manager, wait lang po."
     return None

@@ -8,6 +8,7 @@ from chat.functions import change_topic, inventory, inventory_setup, other, pos,
 from chat.functions.task_utils import identify_task
 from page.models import FacebookPage
 from .models import Chat, UserProfile
+from chat.utils import send_message
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
 from dotenv import load_dotenv
@@ -74,16 +75,6 @@ def save_facebook_chat(request):
                     chat.save()
         return JsonResponse({'status': 'message processed', 'reply': response_text}, status=200)
     return JsonResponse({'error': 'Invalid request method'}, status=400)
-
-def send_message(recipient_id, message_text, facebook_page_instance):
-    post_url = f"https://graph.facebook.com/v11.0/me/messages?access_token={facebook_page_instance.token}"
-    response_message = {
-        'recipient': {'id': recipient_id},
-        'message': {'text': message_text}
-    }
-    response = requests.post(post_url, json=response_message)
-    return response.status_code
-
 
 def ai_process(user_profile, facebook_page_instance, first_run):
     # Retrieve the last 12 chat history for this user
@@ -162,6 +153,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
 
         # Handle tool calls if present
         tool_calls = completion.choices[0].message.tool_calls
+        print("tool_calls", tool_calls)
         if tool_calls:
             if any(tool_call.function.name == "change_topic" for tool_call in tool_calls):
                 response_content = change_topic.tool_function(tool_calls, user_profile)
