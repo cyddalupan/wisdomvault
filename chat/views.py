@@ -8,7 +8,7 @@ from chat.functions import change_topic, inventory, inventory_setup, other, pos,
 from chat.functions.task_utils import identify_task
 from page.models import FacebookPage
 from .models import Chat, UserProfile
-from chat.utils import send_message
+from chat.utils import get_possible_topics, send_message, summarizer
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
 from dotenv import load_dotenv
@@ -56,6 +56,8 @@ def save_facebook_chat(request):
                     # Identify the user's task based on the message
                     identified_task = identify_task(message_text)
                     if identified_task:
+                        if user_profile.task !=identified_task:
+                            summarizer(user_profile)
                         user_profile.task = identified_task
                         user_profile.save()
 
@@ -67,19 +69,24 @@ def save_facebook_chat(request):
 
                     # Process the AI response based on the user's profile and task
                     response_text = ai_process(user_profile, facebook_page_instance, True)
+                    custom_chat = response_text
+
+                    print("response_text",response_text)
+                    if response_text and user_profile.user_type == 'admin':
+                        custom_chat = f"{response_text}\n\n-Topic: {user_profile.task}"
 
                     # Send the AI-generated response back to the user
-                    send_message(sender_id, response_text, facebook_page_instance)
+                    send_message(sender_id, custom_chat, facebook_page_instance)
 
                     # Save the reply to the Chat model
                     chat.reply = response_text
                     chat.save()
-        return JsonResponse({'status': 'message processed', 'reply': response_text}, status=200)
+        return JsonResponse({'status': 'message processed', 'reply': custom_chat}, status=200)
     return JsonResponse({'error': 'Invalid request method'}, status=400)
 
 def ai_process(user_profile, facebook_page_instance, first_run):
     # Retrieve the last 12 chat history for this user
-    chat_history = Chat.objects.filter(user=user_profile).order_by('-timestamp')[:12]
+    chat_history = Chat.objects.filter(user=user_profile, is_summarized=False).order_by('-timestamp')[:6]
     chat_history = list(chat_history)[::-1]  # Reverse to maintain correct chronological order
 
     # Initial empty instruction and tools setup
@@ -101,8 +108,6 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         instruction = escalate.instruction
         tools = escalate.generate_tools()
         tool_function = escalate.tool_function
-        print("instruction", instruction(facebook_page_instance))
-        print("user_profile.task", user_profile.task)
         if not instruction(facebook_page_instance):
             if user_profile.task == "verify_user":
                 instruction = verify_user.instruction
@@ -120,7 +125,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                 instruction = other.instruction
                 tools = other.generate_tools()
                 tool_function = other.tool_function
-            elif user_profile.task == "pos":
+            elif user_profile.task == "sales":
                 instruction = pos.instruction
                 tools = pos.generate_tools()
                 tool_function = pos.tool_function
@@ -131,9 +136,56 @@ def ai_process(user_profile, facebook_page_instance, first_run):
             tool_function = customer.tool_function
 
     # Build AI message with instruction based on task
-    messages = [
-        {"role": "system", "content": "Your name is KENSHI (Kiosk and Easy Navigation System for Handling Inventory). Talk in taglish. Keep reply short. Go straight to the point. Focus only on: " + instruction(facebook_page_instance)}
-    ]
+    if user_profile.user_type == "admin":
+        current_task = user_profile.task.lower()  # Current task from user_profile
+        business_instruction = instruction(facebook_page_instance)  # Get business-related info based on current task
+        
+        # Fetch the possible topics dynamically
+        possible_topics = get_possible_topics()  # Assuming this function returns a list of possible topics
+        
+        # Prepare the system message dynamically with the current task and topic-specific instructions
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    f"Your name is KENSHI (Kiosk and Easy Navigation System for Handling Business). "
+                    f"Speak in taglish, keep replies short, and focus strictly on the current topic: '{current_task}'. "
+                    f"Here is the business-specific context related to the topic: '{business_instruction}'. "
+                    f"Do not discuss anything unrelated unless the user shifts to a different task or mentions something new, "
+                    f"like 'order' or 'sales' during an inventory conversation. "
+                    f"In such cases, use the function 'change_topic' to automatically switch the topic to the relevant task "
+                    f"(e.g., from 'inventory' to 'sales'). "
+                    f"The following topics are available: {', '.join(possible_topics)}. "
+                    f"If the user mentions anything outside the listed topics, politely remind them to choose one from the available topics. "
+                    f"Switch the topic automatically using the 'change_topic' function when the user indicates a shift in focus, "
+                    f"such as an order or sale."
+                )
+            }
+        ]
+
+    if user_profile.user_type == "customer":
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "Your name is KENSHI (Kiosk and Easy Navigation System for Selling Products). "
+                    "Speak in taglish, keep replies short, and focus on helping customers with their inquiries. "
+                    "STRICTLY focus only on: " + instruction(facebook_page_instance) + ". "
+                    "This includes information about products, promotions, pricing, and business-related topics. "
+                    "Do not provide any irrelevant information. If the customer asks about unrelated matters, politely redirect them to appropriate topics."
+                )
+            }
+        ]
+
+    if user_profile.summary:
+        summary_message = {
+            "role": "system",  # Set to "user" if the message needs to be from the user
+            "content": f"Here is the conversation summary for the user: '{user_profile.summary}'"
+        }
+
+        # Append the summary message to the list of messages
+        messages.append(summary_message)
+
 
     # Include previous chat history in the conversation
     for chat in chat_history:
@@ -153,11 +205,12 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         tools.append(help.generate_tools())
 
     # Attempt to generate a completion using the OpenAI API
-    print("messages", messages)
     try:
+        print("AI CALL", messages)
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=messages,
+            temperature=0,
             tools=tools
         )
         response_content = completion.choices[0].message.content
@@ -178,7 +231,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                 response_content = ai_process(user_profile, facebook_page_instance, False)
             if not first_run:
                 # Send an apology if retries fail
-                response_content = "I am sorry it seems like I am getting confused. Can we start again?"
+                response_content = "I am sorry it seems like I am getting confused. Can we try again?"
 
     except requests.exceptions.Timeout:
         # Handle timeout errors specifically
@@ -196,7 +249,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
             "The system is currently unavailable due to unexpected issues. "
             "Our team is working to resolve this. Please try again later."
         )
-    
+
     return response_content
 
 def chat_test_page(request):

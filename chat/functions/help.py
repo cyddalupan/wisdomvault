@@ -1,5 +1,5 @@
 import json
-from chat.utils import send_message
+from chat.utils import send_message, summarizer
 from chat.models import Help, UserProfile, Chat
 from page.models import FacebookPage
 
@@ -52,6 +52,8 @@ def tool_function(tool_calls, user_profile):
                 # Save the incoming message to the Chat model
                 Chat.objects.create(user=admin, message='', reply=message_admin)
                 send_message(admin.facebook_id, message_admin, facebook_page_instance)
+            
+            summarizer(user_profile)
 
             return "⏳ Let me check with my manager. Wait lang po 🙏"
     return None

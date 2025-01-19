@@ -20,7 +20,7 @@ admin.site.register(UserProfile, UserProfileAdmin)
 
 @admin.register(Chat)
 class ChatAdmin(admin.ModelAdmin):
-    list_display = ('get_user_name', 'message', 'reply', 'timestamp')
+    list_display = ('get_user_name', 'message', 'reply', 'is_summarized', 'timestamp')
     list_filter = ('timestamp',)
     search_fields = ('user__name', 'message', 'reply')
 

@@ -52,108 +52,111 @@ def instruction(facebook_page_instance, target_row=None):
     else:
         print("Using cached data...")
 
-    return f"Manage users' inventory stored on Google Sheets:\n{cached_data['data']}"
+    #return f"Manage users' Sales stored on Google Sheets:\n{cached_data['data']}"
+    return f"Manage users' Sales"
 
 def generate_tools():
     tools = []
 
-    tools.append({
-        "type": "function",
-        "function": {
-            "name": "delete_row",
-            "description": "delete one row from SpreadSheet",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "confirmation": {
-                        "type": "boolean",
-                        "description": "user confirms that the product will be deleted",
-                    },
-                    "row_number": {
-                        "type": "integer",
-                        "description": "row of the product to delete",
-                    },
-                },
-                "required": ["row_number", "confirmation"],
-            },
-        }
-    })
+    # tools.append({
+    #     "type": "function",
+    #     "function": {
+    #         "name": "delete_row",
+    #         "description": "delete one row from SpreadSheet",
+    #         "parameters": {
+    #             "type": "object",
+    #             "properties": {
+    #                 "confirmation": {
+    #                     "type": "boolean",
+    #                     "description": "user confirms that the product will be deleted",
+    #                 },
+    #                 "row_number": {
+    #                     "type": "integer",
+    #                     "description": "row of the product to delete",
+    #                 },
+    #             },
+    #             "required": ["row_number", "confirmation"],
+    #         },
+    #     }
+    # })
 
-    tools.append({
-        "type": "function",
-        "function": {
-            "name": "add_row",
-            "description": "add one row from SpreadSheet",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "product_code": {
-                        "type": "string",
-                        "description": "unique code",
-                    },
-                    "name": {
-                        "type": "string",
-                        "description": "item or product name",
-                    },
-                    "stocks": {
-                        "type": "integer",
-                        "description": "how many items are left",
-                    },
-                    "price": {
-                        "type": "integer",
-                        "description": "how much is the item",
-                    },
-                    "desciprtion": {
-                        "type": "string",
-                        "description": "product description",
-                    },
-                },
-                "required": ["name"],
-            },
-        }
-    })
+    # tools.append({
+    #     "type": "function",
+    #     "function": {
+    #         "name": "add_row",
+    #         "description": "add one row from SpreadSheet",
+    #         "parameters": {
+    #             "type": "object",
+    #             "properties": {
+    #                 "product_code": {
+    #                     "type": "string",
+    #                     "description": "unique code",
+    #                 },
+    #                 "name": {
+    #                     "type": "string",
+    #                     "description": "item or product name",
+    #                 },
+    #                 "stocks": {
+    #                     "type": "integer",
+    #                     "description": "how many items are left",
+    #                 },
+    #                 "price": {
+    #                     "type": "integer",
+    #                     "description": "how much is the item",
+    #                 },
+    #                 "desciprtion": {
+    #                     "type": "string",
+    #                     "description": "product description",
+    #                 },
+    #             },
+    #             "required": ["name"],
+    #         },
+    #     }
+    # })
 
-    tools.append({
-        "type": "function",
-        "function": {
-            "name": "edit_row",
-            "description": "edit one row from SpreadSheet",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "row_number": {
-                        "type": "integer",
-                        "description": "row of the product to delete",
-                    },
-                    "product_code": {
-                        "type": "string",
-                        "description": "unique code",
-                    },
-                    "name": {
-                        "type": "string",
-                        "description": "item or product name",
-                    },
-                    "stocks": {
-                        "type": "integer",
-                        "description": "how many items are left",
-                    },
-                    "price": {
-                        "type": "integer",
-                        "description": "how much is the item",
-                    },
-                    "desciprtion": {
-                        "type": "string",
-                        "description": "product description",
-                    },
-                },
-                "required": ["row_number"],
-            },
-        }
-    })
+    # tools.append({
+    #     "type": "function",
+    #     "function": {
+    #         "name": "edit_row",
+    #         "description": "edit one row from SpreadSheet",
+    #         "parameters": {
+    #             "type": "object",
+    #             "properties": {
+    #                 "row_number": {
+    #                     "type": "integer",
+    #                     "description": "row of the product to delete",
+    #                 },
+    #                 "product_code": {
+    #                     "type": "string",
+    #                     "description": "unique code",
+    #                 },
+    #                 "name": {
+    #                     "type": "string",
+    #                     "description": "item or product name",
+    #                 },
+    #                 "stocks": {
+    #                     "type": "integer",
+    #                     "description": "how many items are left",
+    #                 },
+    #                 "price": {
+    #                     "type": "integer",
+    #                     "description": "how much is the item",
+    #                 },
+    #                 "desciprtion": {
+    #                     "type": "string",
+    #                     "description": "product description",
+    #                 },
+    #             },
+    #             "required": ["row_number"],
+    #         },
+    #     }
+    # })
 
     return tools
 
 def tool_function(tool_calls, user_profile, facebook_page_instance):
+    # TODO Add summarizer(user_profile) after completing transactions
+
     for tool_call in tool_calls:
         function_name = tool_call.function.name
         arguments = tool_call.function.arguments

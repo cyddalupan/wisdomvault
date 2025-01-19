@@ -68,4 +68,7 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
     #         is_success = edit_row(facebook_page_instance.sheet_id, arguments_dict)
     #         if is_success:
     #             return "Row Updated. What else can I help you?"
+
+    # TODO Summarize
+    # summarizer(user_profile)
     return None

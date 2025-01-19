@@ -1,6 +1,6 @@
 import json
 from chat.models import Help, UserProfile, Chat
-from chat.utils import send_message
+from chat.utils import send_message, summarizer
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -71,8 +71,6 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
 
                 # Loop through all admins and send them a message
                 for admin in admin_users:
-                    print("admin.facebook_id",admin.facebook_id)
-                    print("user_profile.page_id",user_profile.facebook_id)
                     if str(admin.facebook_id).strip() != str(user_profile.facebook_id).strip():
                         # Save the incoming message to the Chat model
                         Chat.objects.create(user=admin, message='', reply=message_admin)
@@ -101,11 +99,14 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
                     completion = client.chat.completions.create(
                         model="gpt-4o-mini",
                         messages=messages,
+                        temperature=0,
                     )
                     facebook_page_instance.additional_info = completion.choices[0].message.content
                     facebook_page_instance.save()
                 except Exception as e:
                     print(f"Error: {e}")
+                
+                summarizer(user_profile)
 
                 return "✅ Thank you for giving an answer 🙏"
             else:

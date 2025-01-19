@@ -8,6 +8,7 @@ class UserProfile(models.Model):
     user_type = models.CharField(max_length=255)
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     task = models.CharField(max_length=255, default='', blank=True)
+    summary = models.TextField(blank=True, null=True)
 
     def __str__(self):
         if self.user:
@@ -19,6 +20,7 @@ class Chat(models.Model):
     message = models.TextField()
     reply = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
+    is_summarized = models.BooleanField(default=False)
 
     def __str__(self):
         if self.user and self.user.user:

@@ -4,6 +4,8 @@ from googleapiclient.errors import HttpError
 from google.oauth2 import service_account
 import time
 
+from chat.utils import summarizer
+
 # Global variable to store the fetched data and its timestamp
 cached_data = {
     'data': None,
@@ -165,16 +167,19 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
             if confirmation and row_number:
                 is_success = delete_row(facebook_page_instance.sheet_id, row_number)
                 if is_success:
+                    summarizer(user_profile)
                     return "✅"
         
         if function_name == "add_row":
             is_success = add_row(facebook_page_instance.sheet_id, arguments_dict)
             if is_success:
+                summarizer(user_profile)
                 return "✅"
         
         if function_name == "edit_row":
             is_success = edit_row(facebook_page_instance.sheet_id, arguments_dict)
             if is_success:
+                summarizer(user_profile)
                 return "✅"
     return None
 
