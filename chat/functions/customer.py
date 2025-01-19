@@ -4,19 +4,17 @@ from googleapiclient.errors import HttpError
 from google.oauth2 import service_account
 
 def instruction(facebook_page_instance, target_row=None):
-    business_info = facebook_page_instance.info
-    additional_info = facebook_page_instance.additional_info
-    marketing_message = (
-        "Focus on promoting our product or business actively while engaging the user in a meaningful way to keep the conversation interactive. "
-        "Only base the answer from the 'Info' and 'Additional Info' trigger help function if the answer is not there."
-        "If you are unsure or do not have accurate information, never assume or invent anything. Instead, trigger the help function immediately for assistance."
-    )
+    business_info = facebook_page_instance.info or "No business information provided."
+    additional_info = facebook_page_instance.additional_info or "No additional information provided."
 
     # TODO: Add inventories for selling
     # TODO: Add Additional info
 
     # Combine business info with the marketing message
-    return f"{marketing_message}\nInfo: {business_info}\nAdditional Info: {additional_info}"
+    return (
+        f"Information: {business_info}\n"
+        f"Additional Info: {additional_info}"
+    )
 
 
 def generate_tools():

@@ -71,7 +71,6 @@ def save_facebook_chat(request):
                     response_text = ai_process(user_profile, facebook_page_instance, True)
                     custom_chat = response_text
 
-                    print("response_text",response_text)
                     if response_text and user_profile.user_type == 'admin':
                         custom_chat = f"{response_text}\n\n-Topic: {user_profile.task}"
 
@@ -107,13 +106,10 @@ def ai_process(user_profile, facebook_page_instance, first_run):
 
     # Determine the task and set up instructions, tools, and functions
     if user_profile.user_type == 'admin':
-        # Make sure there are no escalation at the moment
-        instruction = escalate.instruction
-        tools = escalate.generate_tools()
-        tool_function = escalate.tool_function
-        if instruction:
-            user_profile.task = 'other'
-            user_profile.save()
+        # Escalete before anything else
+        activeHelp =  escalate.isThereQuestion(facebook_page_instance)
+        if activeHelp:
+            return escalate.bypass(activeHelp, chat_history, user_profile, facebook_page_instance)
 
         if not instruction(facebook_page_instance):
             if user_profile.task == "verify_user":
@@ -155,8 +151,8 @@ def ai_process(user_profile, facebook_page_instance, first_run):
             {
                 "role": "system",
                 "content": (
-                    f"Your name is KENSHI (Kiosk and Easy Navigation System for Handling Business). "
-                    f"Speak in taglish, keep replies short, and focus strictly on the current topic: '{current_task}'. "
+                    f"Your name is KENSHI short for (Kiosk and Easy Navigation System for Handling Inventory). "
+                    f"Speak in taglish, keep replies short, and focus STRICTLY on the current topic: '{current_task}'. "
                     f"Here is the business-specific context related to the topic: '{business_instruction}'. "
                     f"Do not discuss anything unrelated unless the user shifts to a different task or mentions something new, "
                     f"like 'order' or 'sales' during an inventory conversation. "
@@ -175,14 +171,15 @@ def ai_process(user_profile, facebook_page_instance, first_run):
             {
                 "role": "system",
                 "content": (
-                    "Your name is KENSHI (Kiosk and Easy Navigation System for Selling Products). "
-                    "Speak in taglish, keep replies short, and focus on helping customers with their inquiries. "
-                    "STRICTLY focus only on: " + instruction(facebook_page_instance) + ". "
-                    "This includes information about products, promotions, pricing, and business-related topics. "
-                    "Do not provide any irrelevant information. "
-                    "If the customer asks about unrelated matters, politely redirect them to appropriate topics. "
-                    "If the inquiry is related to the business but you are unsure how to respond, use the 'help' function "
-                    "to ask the admin for clarification instead of guessing or inventing an answer."
+                    "Your name is KENSHI (Kiosk and Easy Navigation System for Handling Inventory). "
+                    "Your purpose is to assist customers with inquiries about products, promotions, pricing, inventory, and other business-related topics. "
+                    "STRICTLY base your answers ONLY on the 'Information' and 'Additional Info' provided. "
+                    "NEVER guess, assume, or invent answers. "
+                    "If a customer asks a question unrelated to the business, politely redirect them to focus on business-related topics only. "
+                    "If a customer asks a business-related question and the answer is not found in the provided data, IMMEDIATELY trigger the 'help' function to ask the admin for clarification. "
+                    "Under NO circumstances should you assume, invent, or provide information that is not explicitly found in the provided data. "
+                    "If the question is business-related but unclear or incomplete, still trigger the 'help' function for clarification.\n\n"
+                    + instruction(facebook_page_instance)
                 ),
             }
         ]

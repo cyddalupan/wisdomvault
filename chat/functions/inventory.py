@@ -54,7 +54,12 @@ def instruction(facebook_page_instance, target_row=None):
     else:
         print("Using cached data...")
 
-    return f"Manage users' inventory stored on Google Sheets:\n{cached_data['data']}"
+    return (
+        f"Manage users' inventory stored on Google Sheets:\n{cached_data['data']}\n\n"
+        "IMPORTANT: Never add a product that already exists in the inventory. "
+        "If a product already exists, suggest editing the existing entry instead of adding a duplicate. "
+        "Always verify the product details to avoid duplicates."
+    )
 
 def generate_tools():
     tools = []
@@ -85,7 +90,7 @@ def generate_tools():
         "type": "function",
         "function": {
             "name": "add_row",
-            "description": "add one row from SpreadSheet",
+            "description": "add one row from SpreadSheet, make sure product name does not exist yet",
             "parameters": {
                 "type": "object",
                 "properties": {

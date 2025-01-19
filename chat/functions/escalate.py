@@ -8,19 +8,51 @@ load_dotenv()
 
 client = OpenAI()
 
+def isThereQuestion(facebook_page_instance):
+    # Check if there is a pending help request
+    pending_help = Help.objects.filter(page_id=facebook_page_instance.page_id, answer__isnull=True).order_by('-id').first()
+    return pending_help
 
-def instruction(facebook_page_instance):
-    # facebook_page_instance has attribute page_id
-    # Retrieve the latest Help entry for the given page_id
-    latest_help = Help.objects.filter(page_id=facebook_page_instance.page_id, answer__isnull=True).order_by('-id').first()
 
-    # Check if there's a Help entry, and return the question if found
-    if latest_help:
-        question = latest_help.question
-        return f"Getting the answer from the user (which is the owner) to the customer's question. Do not take any other actions or provide unrelated information. The customers question is: '{question}' Do not ask anything else."
-    else:
-        return None
+def bypass(activeHelp, chat_history, user_profile, facebook_page_instance):
+    question = activeHelp.question
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                f"Your name is KENSHI. You are designed to assist by gathering answers from the user (owner) to customer inquiries and nothing else."
+                f"STRICTLY focus only on asking the user to answer the customer's question."
+                f"If the user mentions anything besides answering the question, politely remind them to answer the question from the user first. "
+                f"Do not provide any unrelated information, explanations, or assumptions. Do not take any other actions just ask the answer to the question."
+                f"The customer's question is: '{question}'."
+                f"Simply ask the user to provide an answer to this question."
+                "then trigger the answer function when you get the answer."
+            )
+        }
+    ]
 
+    # Include previous chat history in the conversation
+    for chat in chat_history:
+        if chat.message and chat.message != "":
+            messages.append({"role": "user", "content": chat.message})
+        if chat.reply and chat.reply != "":
+            messages.append({"role": "assistant", "content": chat.reply})
+    
+    tools = generate_tools()
+
+    completion = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            temperature=0,
+            tools=tools
+        )
+    response_content = completion.choices[0].message.content
+    tool_calls = completion.choices[0].message.tool_calls
+    print("escalate tool_calls", tool_calls)
+    if tool_calls:
+        response_content = tool_function(tool_calls, user_profile, facebook_page_instance)
+    print("emergency result", response_content)
+    return response_content
 
 def generate_tools():
     tools = []
