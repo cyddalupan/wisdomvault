@@ -84,14 +84,29 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
 
                 # Update additional info
                 additional_info = facebook_page_instance.additional_info
-                new_question = latest_help.question
-                new_answer = answer
+                last_question = latest_help.question
+                last_answer = answer
 
                 # Prepare messages to summarize and update the additional information
                 messages = [
-                    {"role": "system", "content": "You are a summarizer. Combine the 'Current Information' with the New 'Q&A Data'. no markdown just sentence."},
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a summarizer. Your task is to combine 'Current Information' with the latest 'Owner Q&A Data'. "
+                            "Ensure the summary retains all important details and context from the current information and the new Q&A. "
+                            "Remove redundant or unimportant details while keeping the summary concise and clear. "
+                            "No markdown, just sentences."
+                        ),
+                    },
                     {"role": "user", "content": f"Current Information: '{additional_info}'"},
-                    {"role": "user", "content": f"Q&A Data: Customer Question: '{new_question}'. \nAnswer: '{new_answer}'"},
+                    {
+                        "role": "user",
+                        "content": (
+                            f"Owner Q&A Data: "
+                            f"Customers's Last Question: '{last_question}'. "
+                            f"Owner's Answer: '{last_answer}'."
+                        ),
+                    },
                 ]
 
                 try:

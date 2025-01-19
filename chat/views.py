@@ -111,6 +111,10 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         instruction = escalate.instruction
         tools = escalate.generate_tools()
         tool_function = escalate.tool_function
+        if instruction:
+            user_profile.task = 'other'
+            user_profile.save()
+
         if not instruction(facebook_page_instance):
             if user_profile.task == "verify_user":
                 instruction = verify_user.instruction
@@ -175,8 +179,11 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                     "Speak in taglish, keep replies short, and focus on helping customers with their inquiries. "
                     "STRICTLY focus only on: " + instruction(facebook_page_instance) + ". "
                     "This includes information about products, promotions, pricing, and business-related topics. "
-                    "Do not provide any irrelevant information. If the customer asks about unrelated matters, politely redirect them to appropriate topics."
-                )
+                    "Do not provide any irrelevant information. "
+                    "If the customer asks about unrelated matters, politely redirect them to appropriate topics. "
+                    "If the inquiry is related to the business but you are unsure how to respond, use the 'help' function "
+                    "to ask the admin for clarification instead of guessing or inventing an answer."
+                ),
             }
         ]
 

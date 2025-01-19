@@ -37,25 +37,34 @@ def summarizer(user_profile):
     try:
         # Fetch all unsummarized chats for the user
         unsummarized_chats = Chat.objects.filter(user=user_profile, is_summarized=False)
-        print("unsummarized_chats",unsummarized_chats)
+        print("unsummarized_chats", unsummarized_chats)
         if not unsummarized_chats.exists():
             print(f"No unsummarized chats found for user with Facebook ID: {user_profile.name}")
             return None
 
         # Combine unsummarized chat messages
         chat_data = "\n".join([f"User: {chat.message}\nSystem: {chat.reply}" for chat in unsummarized_chats])
-        print("chat_data",chat_data)
+        print("chat_data", chat_data)
 
         # Combine with existing summary if available
         existing_summary = user_profile.summary or ""
-        print("existing_summary",existing_summary)
+        print("existing_summary", existing_summary)
 
         # Format messages array for summarization
         messages = [
-            {"role": "system", "content": "You are an assistant summarizer. Summarize the following chat data and include it with the existing summary. no markdown just sentence."},
+            {
+                "role": "system",
+                "content": (
+                    "You are an assistant summarizer. Your task is to combine new chat data with an existing summary. "
+                    "Make sure to retain all important details and context from both the existing summary and the new chat data. "
+                    "Remove redundant or unimportant details while keeping the summary concise and relevant. "
+                    "Ensure that critical information is not lost and prioritize clarity over brevity. No markdown, just sentences."
+                ),
+            },
             {"role": "user", "content": f"Existing Summary: {existing_summary}"},
             {"role": "user", "content": f"New Chat Data: {chat_data}"},
         ]
+
         print("messages",messages)
 
         # Request a completion from the model

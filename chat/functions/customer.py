@@ -8,6 +8,7 @@ def instruction(facebook_page_instance, target_row=None):
     additional_info = facebook_page_instance.additional_info
     marketing_message = (
         "Focus on promoting our product or business actively while engaging the user in a meaningful way to keep the conversation interactive. "
+        "Only base the answer from the 'Info' and 'Additional Info' trigger help function if the answer is not there."
         "If you are unsure or do not have accurate information, never assume or invent anything. Instead, trigger the help function immediately for assistance."
     )
 
