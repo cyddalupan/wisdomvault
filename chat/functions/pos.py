@@ -5,6 +5,8 @@ from google.oauth2 import service_account
 import time
 import datetime
 
+from chat.utils import summarizer
+
 # Global variable to store the fetched data and its timestamp
 cached_data = {
     'data': None,
@@ -112,7 +114,8 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
         if function_name == "create_sale":
             is_success = create_sale(facebook_page_instance.sheet_id, arguments_dict)
             if is_success:
-                return "Row Added. What else can I help you?"
+                summarizer(user_profile)
+                return "📃"
         
     return None
 
@@ -120,52 +123,6 @@ def get_service():
     SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
     creds = service_account.Credentials.from_service_account_file("service_account.json", scopes=SCOPES)
     return build("sheets", "v4", credentials=creds)
-
-def delete_row(sheet_id, row_id):
-    service = get_service()
-
-    try:
-        # Ensure row_id is an integer
-        row_id = int(row_id)
-
-        # Retrieve the current sheets metadata
-        sheets_metadata = service.spreadsheets().get(spreadsheetId=sheet_id).execute()
-
-        # Extract the sheet ID for the 'Inventory' sheet
-        existing_sheets = {
-            sheet['properties']['title']: sheet['properties']['sheetId']
-            for sheet in sheets_metadata['sheets']
-        }
-
-        inventory_sheet_id = existing_sheets.get("Inventory")
-        if inventory_sheet_id is None:
-            raise ValueError("The sheet 'Inventory' does not exist in the spreadsheet.")
-
-        # Prepare the request to delete the row
-        delete_row_request = {
-            "deleteDimension": {
-                "range": {
-                    "sheetId": inventory_sheet_id,
-                    "dimension": "ROWS",
-                    "startIndex": row_id - 1,
-                    "endIndex": row_id,  # Google Sheets uses exclusive end index
-                }
-            }
-        }
-
-        # Execute the request
-        response = service.spreadsheets().batchUpdate(
-            spreadsheetId=sheet_id,
-            body={"requests": [delete_row_request]}
-        ).execute()
-
-        return True
-
-    except Exception as e:
-        print(f"Error deleting row: {e}")
-        return False
-
-import datetime
 
 def create_sale(sheet_id, arguments_dict):
     print("create_sale dict", arguments_dict)
@@ -306,66 +263,3 @@ def update_inventory_stock(sheet_id, row_number, new_stock):
         return False
 
     return True
-
-
-
-
-
-
-def edit_row(sheet_id, arguments_dict):
-    row_number = arguments_dict.get('row_number') 
-    product_code = arguments_dict.get('product_code', None)
-    name = arguments_dict.get('name', None)
-    stocks = arguments_dict.get('stocks', None)
-    price = arguments_dict.get('price', None)
-    description = arguments_dict.get('description', None)
-    
-    # Ensure row_number is provided and is a valid integer
-    if row_number is None:
-        print("Error: row_number is required.")
-        return False
-
-    service = get_service()
-
-    try:
-        # Subtract 1 because Google Sheets API uses 0-based indexing for rows
-        row_index = row_number - 1
-
-        # Read the current row data to preserve any values not being updated
-        result = service.spreadsheets().values().get(
-            spreadsheetId=sheet_id,
-            range=f"Inventory!A{row_index + 1}:E{row_index + 1}"
-        ).execute()
-
-        current_row = result.get('values', [[]])[0]  # Get the current row, or empty list if not found
-
-        # Prepare the new row data to be updated
-        updated_values = [
-            product_code if product_code is not None else current_row[0],
-            name if name is not None else current_row[1],
-            stocks if stocks is not None else current_row[2],
-            price if price is not None else current_row[3],
-            description if description is not None else current_row[4]
-        ]
-
-        # Prepare the request body for the update
-        update_request = {
-            "range": f"Inventory!A{row_index + 1}:E{row_index + 1}",  # The range to update (adjusts based on row number)
-            "valueInputOption": "USER_ENTERED",  # Allow for user-entered values and formatting
-            "values": [updated_values]  # The updated values for that row
-        }
-
-        # Update the row in the spreadsheet
-        response = service.spreadsheets().values().update(
-            spreadsheetId=sheet_id,
-            range=f"Inventory!A{row_index + 1}:E{row_index + 1}",
-            valueInputOption="USER_ENTERED",
-            body={"values": [updated_values]}
-        ).execute()
-
-        print(f"Row {row_number} updated successfully.")
-        return True
-
-    except Exception as e:
-        print(f"Error editing row: {e}")
-        return False
