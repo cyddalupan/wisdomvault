@@ -86,8 +86,11 @@ def save_facebook_chat(request):
 
 def ai_process(user_profile, facebook_page_instance, first_run):
     # Retrieve the last 12 chat history for this user
-    chat_history = Chat.objects.filter(user=user_profile, is_summarized=False).order_by('-timestamp')[:6]
+    chat_history = Chat.objects.filter(user=user_profile, is_summarized=False).order_by('-timestamp')
     chat_history = list(chat_history)[::-1]  # Reverse to maintain correct chronological order
+    if len(chat_history) > 6:
+        # Trigger the summarizer function if there are more than 6 chats
+        summarizer(user_profile)
 
     # Initial empty instruction and tools setup
     def instruction(facebook_page_instance):

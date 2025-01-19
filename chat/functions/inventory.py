@@ -143,7 +143,7 @@ def generate_tools():
                         "type": "integer",
                         "description": "how much is the item",
                     },
-                    "desciprtion": {
+                    "description": {
                         "type": "string",
                         "description": "product description",
                     },
@@ -188,6 +188,13 @@ def get_service():
     creds = service_account.Credentials.from_service_account_file("service_account.json", scopes=SCOPES)
     return build("sheets", "v4", credentials=creds)
 
+def clear_cached_data():
+    global cached_data
+    cached_data = {
+        'data': None,
+        'timestamp': 0
+    }
+
 def delete_row(sheet_id, row_id):
     service = get_service()
 
@@ -226,6 +233,7 @@ def delete_row(sheet_id, row_id):
             body={"requests": [delete_row_request]}
         ).execute()
 
+        clear_cached_data()
         return True
 
     except Exception as e:
@@ -257,6 +265,7 @@ def add_row(sheet_id, arguments_dict):
         ).execute()
 
         print("Row added successfully.")
+        clear_cached_data()
         return True
 
     except Exception as e:
@@ -288,6 +297,7 @@ def edit_row(sheet_id, arguments_dict):
             range=f"Inventory!A{row_index + 1}:E{row_index + 1}"
         ).execute()
 
+        # Retrieve the current row, or default to an empty list if not found
         current_row = result.get('values', [[]])[0]  # Get the current row, or empty list if not found
 
         # Prepare the new row data to be updated
@@ -315,6 +325,7 @@ def edit_row(sheet_id, arguments_dict):
         ).execute()
 
         print(f"Row {row_number} updated successfully.")
+        clear_cached_data()
         return True
 
     except Exception as e:
