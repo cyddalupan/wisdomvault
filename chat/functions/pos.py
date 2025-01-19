@@ -61,6 +61,7 @@ def instruction(facebook_page_instance, target_row=None):
         f"Total cost and list of products being purchased. For reference, here is the active inventory stored on Google Sheets:\n"
         f"{cached_data['data']}\n\n"
         f"Please review the products and total cost, and confirm if you'd like to proceed with the sale."
+        "Do not sell if stocks is not enough."
     )
 
 def generate_tools():
