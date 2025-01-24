@@ -237,6 +237,11 @@ def format_dashboard_sheet(service, sheet_id, dashboard_sheet_id, inventory_shee
                                                 }
                                             ]
                                         }
+                                    },
+                                    "color": {
+                                        "red": 0,
+                                        "green": 0,
+                                        "blue": 0
                                     }
                                 }
                             ],
@@ -294,6 +299,11 @@ def format_dashboard_sheet(service, sheet_id, dashboard_sheet_id, inventory_shee
                                                 }
                                             ]
                                         }
+                                    },
+                                    "color": {
+                                        "red": 0,
+                                        "green": 0,
+                                        "blue": 0
                                     }
                                 }
                             ],
@@ -301,9 +311,9 @@ def format_dashboard_sheet(service, sheet_id, dashboard_sheet_id, inventory_shee
                     },
                     "position": {
                         "overlayPosition": {
-                            "anchorCell": {"sheetId": dashboard_sheet_id, "rowIndex": 0, "columnIndex": 10}
+                            "anchorCell": {"sheetId": dashboard_sheet_id, "rowIndex": 0, "columnIndex": 6}  # Example coordinates
                         }
-                    },
+                    }
                 }
             }
         }
@@ -350,6 +360,11 @@ def format_dashboard_sheet(service, sheet_id, dashboard_sheet_id, inventory_shee
                                                 }
                                             ]
                                         }
+                                    },
+                                    "color": {
+                                        "red": 0,
+                                        "green": 0,
+                                        "blue": 0
                                     }
                                 }
                             ],
@@ -357,7 +372,7 @@ def format_dashboard_sheet(service, sheet_id, dashboard_sheet_id, inventory_shee
                     },
                     "position": {
                         "overlayPosition": {
-                            "anchorCell": {"sheetId": dashboard_sheet_id, "rowIndex": 15, "columnIndex": 0}
+                            "anchorCell": {"sheetId": dashboard_sheet_id, "rowIndex": 19, "columnIndex": 0}
                         }
                     },
                 }
@@ -382,7 +397,7 @@ def format_dashboard_sheet(service, sheet_id, dashboard_sheet_id, inventory_shee
 def format_sales_sheet(service, sheet_id, sales_sheet_id):
     def header_format():
         return {
-            "backgroundColor": {"red": 0.2, "green": 0.6, "blue": 0.6},  # Dark teal
+            "backgroundColor": {"red": 0, "green": 0, "blue": 0},  # Dark teal
             "textFormat": {"bold": True, "fontFamily": "Arial", "fontSize": 12, "foregroundColor": {"red": 1, "green": 1, "blue": 1}},
             "horizontalAlignment": "CENTER"
         }
@@ -465,7 +480,7 @@ def format_sales_sheet(service, sheet_id, sales_sheet_id):
 def format_sales_summary_sheet(service, sheet_id, sales_summary_sheet_id):
     def header_format():
         return {
-            "backgroundColor": {"red": 0.2, "green": 0.6, "blue": 0.6},  # Dark teal
+            "backgroundColor": {"red": 0, "green": 0, "blue": 0},  # Dark teal
             "textFormat": {"bold": True, "fontFamily": "Arial", "fontSize": 12, "foregroundColor": {"red": 1, "green": 1, "blue": 1}},
             "horizontalAlignment": "CENTER"
         }
