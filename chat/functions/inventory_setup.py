@@ -113,46 +113,35 @@ def reorder_sheets(service, sheet_id, dashboard_sheet_id, inventory_sheet_id, sa
     service.spreadsheets().batchUpdate(spreadsheetId=sheet_id, body={"requests": reorder_request}).execute()
 
 def format_inventory_sheet(service, sheet_id, inventory_sheet_id):
-    def header_format():
-        return {
-            "backgroundColor": {"red": 0.2, "green": 0.6, "blue": 0.6},  # Dark teal
-            "textFormat": {"bold": True, "fontFamily": "Arial", "fontSize": 12, "foregroundColor": {"red": 1, "green": 1, "blue": 1}},
-            "horizontalAlignment": "CENTER"
+    # Formatting definitions
+    def create_format(bg_color=None, text_color=None, bold=False, font_size=12, align="CENTER"):
+        format_dict = {
+            "textFormat": {"bold": bold, "fontFamily": "Arial", "fontSize": font_size},
+            "horizontalAlignment": align
         }
+        if bg_color:
+            format_dict["backgroundColor"] = bg_color
+        if text_color:
+            format_dict["textFormat"]["foregroundColor"] = text_color
+        return format_dict
 
-    def row_alternation_format():
-        return {
-            "backgroundColor": {"red": 0.9, "green": 0.96, "blue": 0.96},  # Light teal
-        }
+    # Header format (black background with white text)
+    header_format = create_format(
+        bg_color={"red": 0, "green": 0, "blue": 0},  # Black
+        text_color={"red": 1, "green": 1, "blue": 1},  # White
+        bold=True
+    )
 
-    def stock_alert_format(stock):
-        if stock <= 10:
-            return {"backgroundColor": {"red": 1, "green": 0.8, "blue": 0.8}, "textFormat": {"bold": True}}  # Red
-        elif stock <= 50:
-            return {"backgroundColor": {"red": 1, "green": 1, "blue": 0.6}}  # Yellow
-        else:
-            return {"backgroundColor": {"red": 0.8, "green": 1, "blue": 0.8}}  # Green
+    # Only keep specific columns (you can adjust the columns here)
+    headers = ["Product Code", "Name", "Stocks", "Price", "Description"]  # Removed "Price" and "Description"
 
-    def number_format():
-        return {
-            "numberFormat": {"type": "NUMBER", "pattern": "#,##0"}
-        }
-
-    def currency_format():
-        return {
-            "numberFormat": {"type": "CURRENCY", "pattern": "$#,##0.00"}
-        }
-
-    # Define the header formatting
+    # Requests for header formatting
     format_header_request = {
         "updateCells": {
             "rows": [{
                 "values": [
-                    {"userEnteredValue": {"stringValue": "Product Code"}, "userEnteredFormat": header_format()},
-                    {"userEnteredValue": {"stringValue": "Name"}, "userEnteredFormat": header_format()},
-                    {"userEnteredValue": {"stringValue": "Stocks"}, "userEnteredFormat": header_format()},
-                    {"userEnteredValue": {"stringValue": "Price"}, "userEnteredFormat": header_format()},
-                    {"userEnteredValue": {"stringValue": "Description"}, "userEnteredFormat": header_format()},
+                    {"userEnteredValue": {"stringValue": header}, "userEnteredFormat": header_format}
+                    for header in headers
                 ]
             }],
             "fields": "userEnteredValue,userEnteredFormat",
@@ -160,16 +149,16 @@ def format_inventory_sheet(service, sheet_id, inventory_sheet_id):
         }
     }
 
-    # Resize columns
+    # Resize columns request
     resize_columns_request = {
         "updateDimensionProperties": {
-            "range": {"sheetId": inventory_sheet_id, "dimension": "COLUMNS", "startIndex": 0, "endIndex": 5},
+            "range": {"sheetId": inventory_sheet_id, "dimension": "COLUMNS", "startIndex": 0, "endIndex": len(headers)},
             "properties": {"pixelSize": 150},
             "fields": "pixelSize",
         }
     }
 
-    # Add sample default values for inventory
+    # Sample data for the sheet
     sample_data = [
         ["12345", "🛒 Product A", 100, 10.00, "A great product"],
         ["67890", "🔥 Product B", 5, 25.00, "A popular item"],
@@ -178,31 +167,25 @@ def format_inventory_sheet(service, sheet_id, inventory_sheet_id):
         ["99887", "💎 Product E", 15, 100.00, "Limited edition"],
     ]
 
-    # Prepare requests for sample data
-    data_requests = []
-    for i, row in enumerate(sample_data):
-        values = []
-        for j, val in enumerate(row):
-            cell_format = {}
-            if j == 2:  # Stocks column
-                cell_format = {**stock_alert_format(val), **number_format()} if isinstance(val, int) else {}
-            elif j == 3:  # Price column
-                cell_format = currency_format()
-            elif i % 2 == 0:  # Alternate row styling
-                cell_format = row_alternation_format()
-
-            values.append({"userEnteredValue": {"numberValue" if isinstance(val, (int, float)) else "stringValue": val}, "userEnteredFormat": cell_format})
-        data_requests.append({"values": values})
+    # Generate requests for sample data
+    data_requests = [
+        {
+            "values": [
+                {"userEnteredValue": {("numberValue" if isinstance(val, (int, float)) else "stringValue"): val}}
+                for val in row
+            ]
+        } for row in sample_data
+    ]
 
     populate_sample_data_request = {
         "updateCells": {
             "rows": data_requests,
-            "fields": "userEnteredValue,userEnteredFormat",
+            "fields": "userEnteredValue",
             "start": {"sheetId": inventory_sheet_id, "rowIndex": 1, "columnIndex": 0},
         }
     }
 
-    # Apply all the updates to the sheet
+    # Batch update request
     service.spreadsheets().batchUpdate(
         spreadsheetId=sheet_id,
         body={"requests": [format_header_request, resize_columns_request, populate_sample_data_request]}
