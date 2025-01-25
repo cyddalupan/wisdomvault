@@ -70,19 +70,18 @@ def save_facebook_chat(request):
 
                     # Process the AI response based on the user's profile and task
                     response_text = ai_process(user_profile, facebook_page_instance, True)
-                    custom_chat = response_text
-
+                    
                     # Display topic on chat?
                     # if response_text and user_profile.user_type == 'admin':
-                    #     custom_chat = f"{response_text}\n\n-Topic: {user_profile.task}"
+                    #     response_text = f"{response_text}\n\n-Topic: {user_profile.task}"
 
                     # Send the AI-generated response back to the user
-                    send_message(sender_id, custom_chat, facebook_page_instance)
+                    send_message(sender_id, response_text, facebook_page_instance)
 
                     # Save the reply to the Chat model
                     chat.reply = response_text
                     chat.save()
-        return JsonResponse({'status': 'message processed', 'reply': custom_chat}, status=200)
+        return JsonResponse({'status': 'message processed', 'reply': response_text}, status=200)
     return JsonResponse({'error': 'Invalid request method'}, status=400)
 
 def ai_process(user_profile, facebook_page_instance, first_run):
