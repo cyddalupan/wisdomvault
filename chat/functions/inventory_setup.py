@@ -3,6 +3,8 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from google.oauth2 import service_account
 
+from chat.utils import get_service
+
 
 def instruction(facebook_page_instance):
     return "setting up the inventory sheets"
@@ -45,11 +47,6 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
                     user_profile.save()
                     return "I am now done formatting your sheet. Do you want to start adding Items?"
     return None
-
-def get_service():
-    SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-    creds = service_account.Credentials.from_service_account_file("service_account.json", scopes=SCOPES)
-    return build("sheets", "v4", credentials=creds)
 
 def format_sheets(sheet_id):
     service = get_service()
@@ -238,11 +235,6 @@ def format_dashboard_sheet(service, sheet_id, dashboard_sheet_id, inventory_shee
                                             ]
                                         }
                                     },
-                                    "color": {
-                                        "red": 0,
-                                        "green": 0,
-                                        "blue": 0
-                                    }
                                 }
                             ],
                         }
@@ -300,11 +292,6 @@ def format_dashboard_sheet(service, sheet_id, dashboard_sheet_id, inventory_shee
                                             ]
                                         }
                                     },
-                                    "color": {
-                                        "red": 0,
-                                        "green": 0,
-                                        "blue": 0
-                                    }
                                 }
                             ],
                         }
@@ -361,18 +348,13 @@ def format_dashboard_sheet(service, sheet_id, dashboard_sheet_id, inventory_shee
                                             ]
                                         }
                                     },
-                                    "color": {
-                                        "red": 0,
-                                        "green": 0,
-                                        "blue": 0
-                                    }
                                 }
                             ],
                         }
                     },
                     "position": {
                         "overlayPosition": {
-                            "anchorCell": {"sheetId": dashboard_sheet_id, "rowIndex": 19, "columnIndex": 0}
+                            "anchorCell": {"sheetId": dashboard_sheet_id, "rowIndex": 18, "columnIndex": 0}
                         }
                     },
                 }
@@ -404,7 +386,7 @@ def format_sales_sheet(service, sheet_id, sales_sheet_id):
 
     def currency_format():
         return {
-            "numberFormat": {"type": "CURRENCY", "pattern": "$#,##0.00"}
+            "numberFormat": {"type": "CURRENCY", "pattern": "#,##0.00"}
         }
 
     def number_format():

@@ -1,6 +1,6 @@
 import json
 
-from chat.utils import get_possible_topics, summarizer
+from chat.utils import get_possible_topics, summarize_sales, summarizer
 
 
 def generate_tools():
@@ -12,7 +12,7 @@ def generate_tools():
                 "Switch the topic immediately if the user mentions something related to a different task. "
                 "For instance, if the user is talking about inventory but then mentions a sale (e.g., 'we got an order'), "
                 "switch to sales without the user needing to explicitly say so. "
-                "The following topics are available: {', '.join(get_possible_topics())}. "
+                f"The following topics are available: {', '.join(get_possible_topics())}. "
                 "If the user refers to a different task or shifts focus (like inventory to sales), switch to the relevant topic. "
                 "Only handle the tasks listed in the available topics."
             ),
@@ -30,7 +30,7 @@ def generate_tools():
         }
     }
 
-def tool_function(tool_calls, user_profile):
+def tool_function(tool_calls, user_profile, facebook_page_instance):
     for tool_call in tool_calls:
         function_name = tool_call.function.name
         arguments = tool_call.function.arguments
@@ -39,6 +39,8 @@ def tool_function(tool_calls, user_profile):
         if function_name == "change_topic":
             print("change_topic")
             new_topic = arguments_dict.get('new_topic')
+            if new_topic == 'analyze':    
+                summarize_sales(facebook_page_instance)
             user_profile.task = new_topic
             user_profile.save()
             print("trigger summarizer")

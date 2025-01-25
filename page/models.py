@@ -7,6 +7,7 @@ class FacebookPage(models.Model):
     sheet_id = models.CharField(max_length=255)
     info = models.TextField(blank=True, null=True)
     additional_info = models.TextField(blank=True, null=True)
+    sales = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return self.page_name

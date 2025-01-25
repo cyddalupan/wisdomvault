@@ -4,11 +4,12 @@ import traceback
 import requests
 from openai import OpenAI
 from django.http import JsonResponse, HttpResponse
-from chat.functions import change_topic, inventory, inventory_setup, other, pos, verify_user, customer, help, escalate
+from chat import utils
+from chat.functions import analyze, change_topic, inventory, inventory_setup, other, pos, verify_user, customer, help, escalate
 from chat.functions.task_utils import identify_task
 from page.models import FacebookPage
 from .models import Chat, UserProfile
-from chat.utils import get_possible_topics, send_message, summarizer
+from chat.utils import get_possible_topics, topic_description, send_message, summarizer
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
 from dotenv import load_dotenv
@@ -132,6 +133,10 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                 instruction = pos.instruction
                 tools = pos.generate_tools()
                 tool_function = pos.tool_function
+            elif user_profile.task == "analyze":
+                instruction = analyze.instruction
+                tools = analyze.generate_tools()
+                tool_function = analyze.tool_function
     if user_profile.user_type == 'customer':
         if user_profile.task == "customer":
             instruction = customer.instruction
@@ -152,16 +157,14 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                 "role": "system",
                 "content": (
                     f"Your name is KENSHI short for (Kiosk and Easy Navigation System for Handling Inventory). "
-                    f"Speak in taglish, keep replies short, and focus STRICTLY on the current topic: '{current_task}'. "
-                    f"Here is the business-specific context related to the topic: '{business_instruction}'. "
-                    f"Do not discuss anything unrelated unless the user shifts to a different task or mentions something new, "
-                    f"like 'order' or 'sales' during an inventory conversation. "
+                    f"Speak in taglish, keep replies short, and focus STRICTLY on the current topic: '{current_task}. "
+                    f"Full Details of current topic: ({business_instruction}) "
+                    f"Do not discuss anything unrelated unless the user shifts to a different task/topic"
                     f"In such cases, use the function 'change_topic' to automatically switch the topic to the relevant task "
-                    f"(e.g., from 'inventory' to 'sales'). "
                     f"The following topics are available: {', '.join(possible_topics)}. "
                     f"If the user mentions anything outside the listed topics, politely remind them to choose one from the available topics. "
-                    f"Switch the topic automatically using the 'change_topic' function when the user indicates a shift in focus, "
-                    f"such as an order or sale."
+                    # List topic informations.
+                    f"{topic_description()}"
                 )
             }
         ]
@@ -171,14 +174,13 @@ def ai_process(user_profile, facebook_page_instance, first_run):
             {
                 "role": "system",
                 "content": (
-                    "Your name is KENSHI (Kiosk and Easy Navigation System for Handling Inventory). "
+                    "Your name is KENSHI short for 'Kiosk and Easy Navigation System for Handling Inventory'. "
                     "Your purpose is to assist customers with inquiries about products, promotions, pricing, inventory, and other business-related topics. "
                     "STRICTLY base your answers ONLY on the 'Information' and 'Additional Info' provided. "
                     "NEVER guess, assume, or invent answers. "
                     "If a customer asks a question unrelated to the business, politely redirect them to focus on business-related topics only. "
-                    "If a customer asks a business-related question and the answer is not found in the provided data, IMMEDIATELY trigger the 'help' function to ask the admin for clarification. "
-                    "Under NO circumstances should you assume, invent, or provide information that is not explicitly found in the provided data. "
-                    "If the question is business-related but unclear or incomplete, still trigger the 'help' function for clarification.\n\n"
+                    "If a customer asks a business-related question and the answer is not found in the 'Information' and 'Additional Info', unclear or incomplete, IMMEDIATELY trigger the 'help' function to ask the admin for clarification. "
+                    "Under NO circumstances should you assume, invent, or provide information that is not explicitly found in the 'Information' and 'Additional Info'.\n\n"
                     + instruction(facebook_page_instance)
                 ),
             }
@@ -227,7 +229,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         print("tool_calls", tool_calls)
         if tool_calls:
             if any(tool_call.function.name == "change_topic" for tool_call in tool_calls):
-                response_content = change_topic.tool_function(tool_calls, user_profile)
+                response_content = change_topic.tool_function(tool_calls, user_profile, facebook_page_instance)
             if any(tool_call.function.name == "help" for tool_call in tool_calls):
                 response_content = help.tool_function(tool_calls, user_profile)
             else:

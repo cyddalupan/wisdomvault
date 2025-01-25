@@ -2,6 +2,8 @@ import requests
 from openai import OpenAI
 from dotenv import load_dotenv
 from enum import Enum
+from googleapiclient.discovery import build
+from google.oauth2 import service_account
 
 from chat.models import Chat, UserProfile
 
@@ -9,14 +11,32 @@ load_dotenv()
 
 client = OpenAI()
 
+# START TOPIC ZONE
 class Topics(Enum):
     INVENTORY = "inventory"
     SALES = "sales"
+    ANALYZE =  "analyze"
     ATTENDANCE = "attendance"
     REPORTS = "reports"
 
 def get_possible_topics():
     return [topic.value for topic in Topics]
+
+def topic_description():
+    return (
+        f"Guide on the function 'change_topic' here are the Topic informations:\n"
+        f"inventory - this handles add, edit and delete of items we currently have\n"
+        f"sales - being the owner of this business, you use this to log when a customer orders\n"
+        f"analyze - user want information about previous sales\n"
+        f"attendance and reports are not available for now."
+    )
+
+# END TOPIC ZONE
+
+def get_service():
+    SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+    creds = service_account.Credentials.from_service_account_file("service_account.json", scopes=SCOPES)
+    return build("sheets", "v4", credentials=creds)
 
 def send_message(recipient_id, message_text, facebook_page_instance):
     if facebook_page_instance.token == "antoken":
@@ -90,3 +110,62 @@ def summarizer(user_profile):
     except Exception as e:
         print(f"Error: {e}")
         return None
+
+def summarize_sales(facebook_page_instance):
+    if facebook_page_instance and getattr(facebook_page_instance, 'sheet_id', None):
+        sheet_id = facebook_page_instance.sheet_id
+
+        try:
+            # Initialize the Sheets API service
+            service = get_service()
+
+            # Read the data from the "Sales" sheet
+            result = service.spreadsheets().values().get(
+                spreadsheetId=sheet_id,
+                range="Sales"
+            ).execute()
+
+            sales_message = ""
+            values = result.get('values', [])
+            if not values:
+                sales_message = "No data found in the 'Sales' sheet."
+            else:
+                # Determine how many rows to fetch
+                total_rows = len(values)
+                start_row = max(0, total_rows - 400)  # Get the last 400 rows or all if less than 400
+
+                # Include the header
+                sales_data = values[:1] + values[start_row:]
+                
+                # Format the sheet data into a readable string
+                sales_message = "Live Sales Data in Sheets Format:\n"
+                for i, row in enumerate(sales_data):
+                    row_info = f"Row {i + 1}: {', '.join(row)}"
+                    sales_message += row_info + "\n"
+            print("sales_message", sales_message)
+        
+            # Format messages array for summarization
+            messages = [
+                {
+                    "role": "system",
+                    "content": (
+                        "You summarize and analize data. Here is the data to analize"
+                    ),
+                },
+                {"role": "user", "content": f"Summary of recent sales from google sheets: {sales_message}"},
+            ]
+            
+            completion = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=messages,
+                temperature=0,
+            )
+
+            summarized_text = completion.choices[0].message.content
+            print("summarized_text",summarized_text)
+            facebook_page_instance.sales = summarized_text
+                    
+        except Exception as e:
+            sales_message = f"An error occurred: {str(e)}"
+    return None
+        

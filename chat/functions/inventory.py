@@ -4,7 +4,7 @@ from googleapiclient.errors import HttpError
 from google.oauth2 import service_account
 import time
 
-from chat.utils import summarizer
+from chat.utils import get_service, summarizer
 
 # Global variable to store the fetched data and its timestamp
 cached_data = {
@@ -96,7 +96,7 @@ def generate_tools():
                 "properties": {
                     "product_code": {
                         "type": "string",
-                        "description": "unique code",
+                        "description": "unique code - optional",
                     },
                     "name": {
                         "type": "string",
@@ -112,7 +112,7 @@ def generate_tools():
                     },
                     "desciprtion": {
                         "type": "string",
-                        "description": "product description",
+                        "description": "product description - optional",
                     },
                 },
                 "required": ["name"],
@@ -187,11 +187,6 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
                 summarizer(user_profile)
                 return "✅"
     return None
-
-def get_service():
-    SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-    creds = service_account.Credentials.from_service_account_file("service_account.json", scopes=SCOPES)
-    return build("sheets", "v4", credentials=creds)
 
 def clear_cached_data():
     global cached_data

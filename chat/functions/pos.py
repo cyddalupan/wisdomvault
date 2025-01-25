@@ -5,7 +5,7 @@ from google.oauth2 import service_account
 import time
 import datetime
 
-from chat.utils import summarizer
+from chat.utils import get_service, summarizer
 
 # Global variable to store the fetched data and its timestamp
 cached_data = {
@@ -57,7 +57,7 @@ def instruction(facebook_page_instance, target_row=None):
 
     return (
         f"Manage users' sales: Record purchases made by customers involving one or more items. "
-        f"Use the 'sale' function to process transactions. Before completing the sale, confirm the details: "
+        f"Use the 'create_sale' function to process transactions. Before completing the sale, confirm the details: "
         f"Total cost and list of products being purchased. For reference, here is the active inventory stored on Google Sheets:\n"
         f"{cached_data['data']}\n\n"
         f"Please review the products and total cost, and confirm if you'd like to proceed with the sale."
@@ -119,11 +119,6 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
                 return "📃"
         
     return None
-
-def get_service():
-    SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-    creds = service_account.Credentials.from_service_account_file("service_account.json", scopes=SCOPES)
-    return build("sheets", "v4", credentials=creds)
 
 def create_sale(sheet_id, arguments_dict):
     print("create_sale dict", arguments_dict)
