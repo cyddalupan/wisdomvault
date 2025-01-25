@@ -72,8 +72,9 @@ def save_facebook_chat(request):
                     response_text = ai_process(user_profile, facebook_page_instance, True)
                     custom_chat = response_text
 
-                    if response_text and user_profile.user_type == 'admin':
-                        custom_chat = f"{response_text}\n\n-Topic: {user_profile.task}"
+                    # Display topic on chat?
+                    # if response_text and user_profile.user_type == 'admin':
+                    #     custom_chat = f"{response_text}\n\n-Topic: {user_profile.task}"
 
                     # Send the AI-generated response back to the user
                     send_message(sender_id, custom_chat, facebook_page_instance)
