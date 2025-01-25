@@ -80,6 +80,10 @@ def generate_tools():
                         "type": "integer",
                         "description": "row of the product to delete",
                     },
+                    "item_name": {
+                        "type": "string",
+                        "description": "name of item/product",
+                    },
                 },
                 "required": ["row_number", "confirmation"],
             },
@@ -168,24 +172,27 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
 
         if function_name == "delete_row":
             row_number = arguments_dict.get('row_number')
+            item_name = arguments_dict.get('item_name')
             confirmation = arguments_dict.get('confirmation', False)
             if confirmation and row_number:
                 is_success = delete_row(facebook_page_instance.sheet_id, row_number)
                 if is_success:
                     summarizer(user_profile)
-                    return "✅"
+                    return f"🗑️{item_name} - Deleted"
         
         if function_name == "add_row":
             is_success = add_row(facebook_page_instance.sheet_id, arguments_dict)
+            name = arguments_dict.get('name')
             if is_success:
                 summarizer(user_profile)
-                return "✅"
+                return f"✅{name} - Added"
         
         if function_name == "edit_row":
             is_success = edit_row(facebook_page_instance.sheet_id, arguments_dict)
+            name = arguments_dict.get('name')
             if is_success:
                 summarizer(user_profile)
-                return "✅"
+                return f"✏️{name} - Updated"
     return None
 
 def clear_cached_data():

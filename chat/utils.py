@@ -24,11 +24,11 @@ def get_possible_topics():
 
 def topic_description():
     return (
-        f"Guide on the function 'change_topic' here are the Topic informations:\n"
-        f"inventory - this handles add, edit and delete of items we currently have\n"
-        f"sales - being the owner of this business, you use this to log when a customer orders\n"
-        f"analyze - user want information about previous sales\n"
-        f"attendance and reports are not available for now."
+        "Guide on the function 'change_topic':\n"
+        "- inventory: Manage your products/items (add, edit, delete).\n"
+        "- sales: Log customer orders as the business owner.\n"
+        "- analyze: Get insights on sales history, reports or ongoing sales queries. It triggers on keywords like 'history', 'current sales', 'reports' or 'sales analysis'.\n"
+        "- attendance and reports are not available currently."
     )
 
 # END TOPIC ZONE
@@ -76,10 +76,11 @@ def summarizer(user_profile):
                 "role": "system",
                 "content": (
                     "You are an assistant summarizer. Your task is to combine new chat data with an existing summary. "
-                    "Make sure to retain all important details and context from both the existing summary and the new chat data. "
+                    "Ensure that all important details and context are retained from both the existing summary and new chat data, "
+                    "excluding any sales or inventory information as these are recorded separately in Google Sheets. "
                     "Remove redundant or unimportant details while keeping the summary concise and relevant. "
                     "Ensure that critical information is not lost and prioritize clarity over brevity. No markdown, just sentences."
-                ),
+                )
             },
             {"role": "user", "content": f"Existing Summary: {existing_summary}"},
             {"role": "user", "content": f"New Chat Data: {chat_data}"},

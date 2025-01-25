@@ -158,7 +158,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                 "role": "system",
                 "content": (
                     f"Your name is KENSHI short for (Kiosk and Easy Navigation System for Handling Inventory). "
-                    f"Speak in taglish, keep replies short, and focus STRICTLY on the current topic: '{current_task}. "
+                    f"Speak in taglish, keep replies short, No markdown just emoji and proper spacing, and focus STRICTLY on the current topic: '{current_task}. "
                     f"Full Details of current topic: ({business_instruction}) "
                     f"Do not discuss anything unrelated unless the user shifts to a different task/topic"
                     f"In such cases, use the function 'change_topic' to automatically switch the topic to the relevant task "
@@ -176,11 +176,12 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                 "role": "system",
                 "content": (
                     "Your name is KENSHI short for 'Kiosk and Easy Navigation System for Handling Inventory'. "
+                    "Speak in taglish, keep replies short, No markdown just emoji and proper spacing. "
                     "Your purpose is to assist customers with inquiries about products, promotions, pricing, inventory, and other business-related topics. "
                     "STRICTLY base your answers ONLY on the 'Information' and 'Additional Info' provided. "
                     "NEVER guess, assume, or invent answers. "
                     "If a customer asks a question unrelated to the business, politely redirect them to focus on business-related topics only. "
-                    "If a customer asks a business-related question and the answer is not found in the 'Information' and 'Additional Info', unclear or incomplete, IMMEDIATELY trigger the 'help' function to ask the admin for clarification. "
+                    "If a customer asks a business-related question and the answer is not found in the 'Information' and 'Additional Info', unclear or incomplete, IMMEDIATELY trigger the 'help' function to ask the admin/owner/manager for clarification. "
                     "Under NO circumstances should you assume, invent, or provide information that is not explicitly found in the 'Information' and 'Additional Info'.\n\n"
                     + instruction(facebook_page_instance)
                 ),

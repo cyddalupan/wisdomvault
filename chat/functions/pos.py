@@ -116,7 +116,7 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
             is_success = create_sale(facebook_page_instance.sheet_id, arguments_dict)
             if is_success:
                 summarizer(user_profile)
-                return "📃"
+                return "📃Order Has been created!"
         
     return None
 
