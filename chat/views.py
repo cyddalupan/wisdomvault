@@ -40,19 +40,20 @@ def save_facebook_chat(request):
             for event in entry['messaging']:
                 sender_id = event['sender']['id']  # The user's Facebook ID
                 page_id = entry['id']  # The Facebook page ID
+                # Fetch the FacebookPage instance
+                facebook_page_instance = FacebookPage.objects.get(page_id=page_id)
                 # Create or retrieve the user profile
+                print("NAME:", get_facebook_user_name(sender_id, facebook_page_instance.token))
                 user_profile, created = UserProfile.objects.get_or_create(
                     facebook_id=sender_id,
                     defaults={
                         'facebook_id': sender_id,
                         'page_id': page_id,
-                        'name': get_facebook_user_name(sender_id, page_id),
+                        'name': get_facebook_user_name(sender_id, facebook_page_instance.token),
                         'user_type': 'customer',
                         'task': 'customer',
                     }
                 )
-                # Fetch the FacebookPage instance
-                facebook_page_instance = FacebookPage.objects.get(page_id=user_profile.page_id)
                 message_text = event['message'].get('text')  # Message text sent by the user
 
                  # Check for image attachment
