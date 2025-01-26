@@ -40,6 +40,17 @@ def save_facebook_chat(request):
             for event in entry['messaging']:
                 sender_id = event['sender']['id']  # The user's Facebook ID
                 page_id = entry['id']  # The Facebook page ID
+                # Create or retrieve the user profile
+                user_profile, created = UserProfile.objects.get_or_create(
+                    facebook_id=sender_id,
+                    defaults={
+                        'facebook_id': sender_id,
+                        'page_id': page_id,
+                        'name': get_facebook_user_name(sender_id, page_id),
+                        'user_type': 'customer',
+                        'task': 'customer',
+                    }
+                )
                 # Fetch the FacebookPage instance
                 facebook_page_instance = FacebookPage.objects.get(page_id=user_profile.page_id)
                 message_text = event['message'].get('text')  # Message text sent by the user
@@ -50,31 +61,22 @@ def save_facebook_chat(request):
                         if attachment['type'] == 'image':
                             image_url = attachment['payload']['url']
                             response_text = "Wait lang po, pa-review ko muna kay manager yung image. May iba ka pa bang kailangan? 😊"
+                            Chat.objects.create(user=user_profile, message=message_text, reply=response_text)
                             send_message(sender_id, response_text, facebook_page_instance)
                             # Fetch all admins for the page
                             admin_users = UserProfile.objects.filter(page_id=user_profile.page_id, user_type='admin')
                             # Loop through all admins and send them a message
+                            message_admin = f"{get_facebook_user_name(sender_id, page_id)} sent an image 📷. Could this be a payment or confirmation? Just a note: I can't automate this. Thank you! 😊"
                             for admin in admin_users:
+                                Chat.objects.create(user=admin, message='', reply=message_admin)
                                 send_image(admin.facebook_id, image_url, facebook_page_instance)
                                 send_message(
                                     admin.facebook_id,
-                                    f"{get_facebook_user_name(sender_id, page_id)} sent an image 📷. Could this be a payment or confirmation? Just a note: I can't automate this. Thank you! 😊",
+                                    message_admin,
                                     facebook_page_instance
                                 )
 
                 if message_text:
-                    # Create or retrieve the user profile
-                    user_profile, created = UserProfile.objects.get_or_create(
-                        facebook_id=sender_id,
-                        defaults={
-                            'facebook_id': sender_id,
-                            'page_id': page_id,
-                            'name': get_facebook_user_name(sender_id, page_id),
-                            'user_type': 'customer',
-                            'task': 'customer',
-                        }
-                    )
-
                     # Identify the user's task based on the message
                     identified_task = identify_task(message_text)
                     if identified_task:
