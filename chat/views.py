@@ -55,7 +55,6 @@ def save_facebook_chat(request):
                 facebook_page_instance = FacebookPage.objects.get(page_id=user_profile.page_id)
                 message_text = event['message'].get('text')  # Message text sent by the user
 
-                print("event['message']", event['message'])
                  # Check for image attachment
                 if 'attachments' in event['message']:
                     for attachment in event['message']['attachments']:
@@ -64,12 +63,11 @@ def save_facebook_chat(request):
                             message_text = "[User Sends Image]"
                             response_text = "Wait lang po, pa-review ko muna kay manager yung image. May iba ka pa bang kailangan? 😊"
                             Chat.objects.create(user=user_profile, message=message_text, reply=response_text)
-                            print("chat saved")
                             send_message(sender_id, response_text, facebook_page_instance)
                             # Fetch all admins for the page
                             admin_users = UserProfile.objects.filter(page_id=user_profile.page_id, user_type='admin')
                             # Loop through all admins and send them a message
-                            message_admin = f"{get_facebook_user_name(sender_id, page_id)} sent an image 📷. Could this be a payment or confirmation? Just a note: I can't automate this. Thank you! 😊"
+                            message_admin = f"{user_profile.name} sent an image 📷. Could this be a payment or confirmation? Just a note: I can't automate this. Thank you! 😊"
                             for admin in admin_users:
                                 Chat.objects.create(user=admin, message='', reply=message_admin)
                                 send_image(admin.facebook_id, image_url, facebook_page_instance)
@@ -79,7 +77,6 @@ def save_facebook_chat(request):
                                     facebook_page_instance
                                 )
                 elif message_text:
-                    print("message_text")
                     # Identify the user's task based on the message
                     identified_task = identify_task(message_text)
                     if identified_task:
