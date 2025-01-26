@@ -58,10 +58,10 @@ def save_facebook_chat(request):
                 print("event['message']", event['message'])
                  # Check for image attachment
                 if 'attachments' in event['message']:
-                    print("attachments")
                     for attachment in event['message']['attachments']:
                         if attachment['type'] == 'image':
                             image_url = attachment['payload']['url']
+                            message_text = "[User Sends Image]"
                             response_text = "Wait lang po, pa-review ko muna kay manager yung image. May iba ka pa bang kailangan? 😊"
                             Chat.objects.create(user=user_profile, message=message_text, reply=response_text)
                             send_message(sender_id, response_text, facebook_page_instance)
