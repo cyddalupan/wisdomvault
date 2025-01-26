@@ -52,6 +52,21 @@ def send_message(recipient_id, message_text, facebook_page_instance):
     response = requests.post(post_url, json=response_message)
     return response.status_code
 
+def send_image(recipient_id, image_url, facebook_page_instance):
+    post_url = f"https://graph.facebook.com/v11.0/me/messages?access_token={facebook_page_instance.token}"
+    message_data = {
+        'recipient': {'id': recipient_id},
+        'message': {
+            'attachment': {
+                'type': 'image',
+                'payload': {'url': image_url}
+            }
+        }
+    }
+
+    response = requests.post(post_url, json=message_data)
+    return response.status_code
+
 def get_facebook_user_name(user_id, access_token):
     url = f'https://graph.facebook.com/{user_id}'
     params = {

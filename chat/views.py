@@ -9,7 +9,7 @@ from chat.functions import analyze, change_topic, inventory, inventory_setup, ot
 from chat.functions.task_utils import identify_task
 from page.models import FacebookPage
 from .models import Chat, UserProfile
-from chat.utils import get_facebook_user_name, get_possible_topics, topic_description, send_message, summarizer
+from chat.utils import get_facebook_user_name, get_possible_topics, send_image, topic_description, send_message, summarizer
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
 from dotenv import load_dotenv
@@ -40,7 +40,27 @@ def save_facebook_chat(request):
             for event in entry['messaging']:
                 sender_id = event['sender']['id']  # The user's Facebook ID
                 page_id = entry['id']  # The Facebook page ID
+                # Fetch the FacebookPage instance
+                facebook_page_instance = FacebookPage.objects.get(page_id=user_profile.page_id)
                 message_text = event['message'].get('text')  # Message text sent by the user
+
+                 # Check for image attachment
+                if 'attachments' in event['message']:
+                    for attachment in event['message']['attachments']:
+                        if attachment['type'] == 'image':
+                            image_url = attachment['payload']['url']
+                            response_text = "Wait lang po, pa-review ko muna kay manager yung image. May iba ka pa bang kailangan? 😊"
+                            send_message(sender_id, response_text, facebook_page_instance)
+                            # Fetch all admins for the page
+                            admin_users = UserProfile.objects.filter(page_id=user_profile.page_id, user_type='admin')
+                            # Loop through all admins and send them a message
+                            for admin in admin_users:
+                                send_image(admin.facebook_id, image_url, facebook_page_instance)
+                                send_message(
+                                    admin.facebook_id,
+                                    f"{get_facebook_user_name(sender_id, page_id)} sent an image 📷. Could this be a payment or confirmation? Just a note: I can't automate this. Thank you! 😊",
+                                    facebook_page_instance
+                                )
 
                 if message_text:
                     # Create or retrieve the user profile
@@ -65,9 +85,6 @@ def save_facebook_chat(request):
 
                     # Save the incoming message to the Chat model
                     chat = Chat.objects.create(user=user_profile, message=message_text, reply='')
-
-                    # Fetch the FacebookPage instance
-                    facebook_page_instance = FacebookPage.objects.get(page_id=user_profile.page_id)
 
                     # Process the AI response based on the user's profile and task
                     response_text = ai_process(user_profile, facebook_page_instance, True)
