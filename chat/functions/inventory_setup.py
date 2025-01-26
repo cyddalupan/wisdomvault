@@ -469,7 +469,7 @@ def format_sales_summary_sheet(service, sheet_id, sales_summary_sheet_id):
 
     def currency_format():
         return {
-            "numberFormat": {"type": "CURRENCY", "pattern": "$#,##0.00"}
+            "numberFormat": {"type": "CURRENCY", "pattern": "#,##0.00"}
         }
 
     # Define the header formatting
@@ -479,9 +479,10 @@ def format_sales_summary_sheet(service, sheet_id, sales_summary_sheet_id):
                 "values": [
                     {"userEnteredValue": {"stringValue": "Date Time"}, "userEnteredFormat": header_format()},
                     {"userEnteredValue": {"stringValue": "Sale Total"}, "userEnteredFormat": header_format()},
+                    {"userEnteredValue": {"stringValue": "Customer"}, "userEnteredFormat": header_format()},
                 ]
             }],
-            "fields": "userEnteredValue,userEnteredFormat",
+            "fields": "userEnteredValue,userEnteredFormat,userEnteredValue",
             "start": {"sheetId": sales_summary_sheet_id, "rowIndex": 0, "columnIndex": 0},
         }
     }
@@ -497,10 +498,10 @@ def format_sales_summary_sheet(service, sheet_id, sales_summary_sheet_id):
 
     # Test data aggregated by date-time
     summary_test_data = [
-        ["2025-01-04 10:30:00", 20.00],
-        ["2025-01-04 11:00:00", 50.00],
-        ["2025-01-04 11:30:00", 15.00],
-        ["2025-01-04 12:34:00", 660.00],  # Combined totals for this timestamp
+        ["2025-01-04 10:30:00", 20.00, "Mark"],
+        ["2025-01-04 11:00:00", 50.00, ""],
+        ["2025-01-04 11:30:00", 15.00, ""],
+        ["2025-01-04 12:34:00", 660.00, "Andrew"],  # Combined totals for this timestamp
     ]
 
     test_data_requests = []
@@ -508,6 +509,7 @@ def format_sales_summary_sheet(service, sheet_id, sales_summary_sheet_id):
         values = [
             {"userEnteredValue": {"stringValue": row[0]}},  # Date Time
             {"userEnteredValue": {"numberValue": row[1]}, "userEnteredFormat": currency_format()},  # Sale Total
+            {"userEnteredValue": {"stringValue": row[2]}},
         ]
         test_data_requests.append({"values": values})
 

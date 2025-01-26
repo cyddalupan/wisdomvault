@@ -60,6 +60,8 @@ def instruction(facebook_page_instance, target_row=None):
         f"Use the 'create_sale' function to process transactions. Before completing the sale, confirm the details: "
         f"Total cost and list of products being purchased. For reference, here is the active inventory stored on Google Sheets:\n"
         f"{cached_data['data']}\n\n"
+        "IMPORTANT: The Google Sheet is the sole source of truth regarding inventory data. "
+        "IMPORTANT: You are talking to the user which is the business owner, The user is selling and not buying and we will record what user sells. "
         f"Please review the products and total cost, and confirm if you'd like to proceed with the sale."
         "Do not sell if stocks is not enough."
     )
@@ -93,6 +95,10 @@ def generate_tools():
                             "required": ["row_number", "quantity"],
                         },
                     },
+                    "customer": {
+                        "type": "string",
+                        "description": "Optional name of customer.",
+                    },
                     "confirmation": {
                         "type": "boolean",
                         "description": "User confirmation that the order is complete.",
@@ -113,14 +119,14 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
         arguments_dict = json.loads(arguments)
 
         if function_name == "create_sale":
-            is_success = create_sale(facebook_page_instance.sheet_id, arguments_dict)
+            is_success = create_sale(facebook_page_instance.sheet_id, arguments_dict, arguments_dict.get('customer'))
             if is_success:
                 summarizer(user_profile)
                 return "📃Order Has been created!"
         
     return None
 
-def create_sale(sheet_id, arguments_dict):
+def create_sale(sheet_id, arguments_dict, name):
     print("create_sale dict", arguments_dict)
     # Example value of arguments_dict
     # {'items': [{'row_number': 4, 'quantity': 2}, {'row_number': 5, 'quantity': 2}, {'row_number': 6, 'quantity': 10}], 'confirmation': True}
@@ -180,7 +186,7 @@ def create_sale(sheet_id, arguments_dict):
     # Step 2: Insert summary data into the 'Sales Summary' sheet
     try:
         # Insert sale summary (one row per batch sale)
-        sale_summary_data = [[sale_time, total_sale]]
+        sale_summary_data = [[sale_time, total_sale, name]]
 
         response_summary = service.spreadsheets().values().append(
             spreadsheetId=sheet_id,

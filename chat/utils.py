@@ -25,9 +25,9 @@ def get_possible_topics():
 def topic_description():
     return (
         "Guide on the function 'change_topic':\n"
-        "- inventory: Manage your products/items (add, edit, delete).\n"
-        "- sales: Log customer orders as the business owner.\n"
-        "- analyze: Get insights on sales history, reports or ongoing sales queries. It triggers on keywords like 'history', 'current sales', 'reports' or 'sales analysis'.\n"
+        "- inventory: View, add, edit, or delete product/item records. This is for managing the items available for sale.\n"
+        "- sales: Log new sales orders as the business owner when customers make purchases.\n"
+        "- analyze: Review and obtain insights from sales history and data. Use this for generating reports based on past sales activities.\n"
         "- attendance and reports are not available currently."
     )
 
@@ -99,11 +99,10 @@ def summarizer(user_profile):
             {
                 "role": "system",
                 "content": (
-                    "You are an assistant summarizer. Your task is to combine new chat data with an existing summary. "
-                    "Ensure that all important details and context are retained from both the existing summary and new chat data, "
-                    "excluding any sales or inventory information as these are recorded separately in Google Sheets. "
-                    "Remove redundant or unimportant details while keeping the summary concise and relevant. "
-                    "Ensure that critical information is not lost and prioritize clarity over brevity. No markdown, just sentences."
+                    "You are an assistant summarizer. Your task is to combine new chat data with an existing summary, focusing solely on retaining important user information unrelated to business transactions. "
+                    "Exclude all business-related data, such as sales, inventory, transactions, additions, updates, or deletions, as these are tracked separately in Google Sheets. "
+                    "Preserve only personal user details and interactions, removing any business information to ensure the summary is concise. "
+                    "Ensure the capture of all critical non-business related user information."
                 )
             },
             {"role": "user", "content": f"Existing Summary: {existing_summary}"},

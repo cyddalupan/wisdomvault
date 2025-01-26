@@ -56,7 +56,8 @@ def instruction(facebook_page_instance, target_row=None):
 
     return (
         f"Manage users' inventory stored on Google Sheets:\n{cached_data['data']}\n\n"
-        "IMPORTANT: Never add a product that already exists in the inventory. "
+        "IMPORTANT: The Google Sheet is the sole source of truth regarding inventory data. "
+        "Never add a product that already exists in the inventory. "
         "If a product already exists, suggest editing the existing entry instead of adding a duplicate. "
         "Always verify the product details to avoid duplicates."
     )

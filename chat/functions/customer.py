@@ -121,7 +121,7 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
         arguments_dict = json.loads(arguments)
 
         if function_name == "create_sale":
-            is_success = create_sale(facebook_page_instance.sheet_id, arguments_dict)
+            is_success = create_sale(facebook_page_instance.sheet_id, arguments_dict, user_profile.name)
             if is_success:
                 summarizer(user_profile)
                 return "📃Order Created, Please send payment confirmation, Salamat"

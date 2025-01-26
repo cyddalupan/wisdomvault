@@ -177,7 +177,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                 "role": "system",
                 "content": (
                     f"Your name is KENSHI short for (Kiosk and Easy Navigation System for Handling Inventory). "
-                    f"Speak in taglish, keep replies short, No markdown just emoji and proper spacing, and focus STRICTLY on the current topic: '{current_task}. "
+                    f"Speak in taglish, keep replies short, No markdown just emoji and proper spacing, and focus STRICTLY on the current topic: '{current_task}'. "
                     f"Full Details of current topic: ({business_instruction}) "
                     f"Do not discuss anything unrelated unless the user shifts to a different task/topic"
                     f"In such cases, use the function 'change_topic' to automatically switch the topic to the relevant task "
@@ -236,7 +236,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
 
     # Attempt to generate a completion using the OpenAI API
     try:
-        #print("AI CALL", messages)
+        print("AI CALL", messages)
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=messages,
