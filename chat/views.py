@@ -9,7 +9,7 @@ from chat.functions import analyze, change_topic, inventory, inventory_setup, ot
 from chat.functions.task_utils import identify_task
 from page.models import FacebookPage
 from .models import Chat, UserProfile
-from chat.utils import get_possible_topics, topic_description, send_message, summarizer
+from chat.utils import get_facebook_user_name, get_possible_topics, topic_description, send_message, summarizer
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
 from dotenv import load_dotenv
@@ -61,6 +61,9 @@ def save_facebook_chat(request):
                             summarizer(user_profile)
                         user_profile.task = identified_task
                         user_profile.save()
+                    
+                    user_name = get_facebook_user_name(sender_id, page_id)
+                    print("user_name", user_name)
 
                     # Save the incoming message to the Chat model
                     chat = Chat.objects.create(user=user_profile, message=message_text, reply='')

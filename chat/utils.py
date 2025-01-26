@@ -52,6 +52,19 @@ def send_message(recipient_id, message_text, facebook_page_instance):
     response = requests.post(post_url, json=response_message)
     return response.status_code
 
+def get_facebook_user_name(user_id, access_token):
+    url = f'https://graph.facebook.com/{user_id}'
+    params = {
+        'fields': 'name',
+        'access_token': access_token
+    }
+    
+    response = requests.get(url, params=params)
+    if response.status_code == 200:
+        return response.json().get('name')
+    else:
+        return None
+
 def summarizer(user_profile):
     print("summarize function opened")
     try:
