@@ -49,6 +49,7 @@ def save_facebook_chat(request):
                         defaults={
                             'facebook_id': sender_id,
                             'page_id': page_id,
+                            'name': get_facebook_user_name(sender_id, page_id),
                             'user_type': 'customer',
                             'task': 'customer',
                         }
@@ -61,9 +62,6 @@ def save_facebook_chat(request):
                             summarizer(user_profile)
                         user_profile.task = identified_task
                         user_profile.save()
-                    
-                    user_name = get_facebook_user_name(sender_id, page_id)
-                    print("user_name", user_name)
 
                     # Save the incoming message to the Chat model
                     chat = Chat.objects.create(user=user_profile, message=message_text, reply='')

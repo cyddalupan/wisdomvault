@@ -63,7 +63,7 @@ def get_facebook_user_name(user_id, access_token):
     if response.status_code == 200:
         return response.json().get('name')
     else:
-        return None
+        return ""
 
 def summarizer(user_profile):
     print("summarize function opened")
