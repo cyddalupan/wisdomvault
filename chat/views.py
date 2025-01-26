@@ -64,6 +64,7 @@ def save_facebook_chat(request):
                             message_text = "[User Sends Image]"
                             response_text = "Wait lang po, pa-review ko muna kay manager yung image. May iba ka pa bang kailangan? 😊"
                             Chat.objects.create(user=user_profile, message=message_text, reply=response_text)
+                            print("chat saved")
                             send_message(sender_id, response_text, facebook_page_instance)
                             # Fetch all admins for the page
                             admin_users = UserProfile.objects.filter(page_id=user_profile.page_id, user_type='admin')
