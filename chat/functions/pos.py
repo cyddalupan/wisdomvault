@@ -216,6 +216,7 @@ def get_product_data_from_inventory(sheet_id, row_number):
     ).execute()
 
     values = result.get('values', [])
+    print("###Values", values)
     
     # Check if data exists for the row
     if values:
@@ -225,6 +226,7 @@ def get_product_data_from_inventory(sheet_id, row_number):
         # Prepare the data, using current values if the new value is not provided
         product_code = current_row[0] if len(current_row) > 0 else None
         name = current_row[1] if len(current_row) > 1 else None
+        print("###Values", current_row[2])
         stocks = int(current_row[2]) if len(current_row) > 2 and current_row[2] else 0
         price = float(current_row[3]) if len(current_row) > 3 and current_row[3] else 0.0
         description = current_row[4] if len(current_row) > 4 else None

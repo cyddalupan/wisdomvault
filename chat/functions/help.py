@@ -7,8 +7,8 @@ def generate_tools():
     return {
         "type": "function",
         "function": {
-            "name": "help",
-            "description": "if the system does not know what to say to a business related question, use this to ask admin what to say",
+            "name": "ask_manager_help",
+            "description": "if the system does not know what to say, use this to ask admin what to say",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -28,8 +28,10 @@ def tool_function(tool_calls, user_profile):
         arguments = tool_call.function.arguments
         arguments_dict = json.loads(arguments)
 
-        if function_name == "help":
+        print("### Function", function_name)
+        if function_name == "ask_manager_help":
             question = arguments_dict.get('question')
+            print("### Function question", question)
 
             # Save the question into the Help model
             help_entry = Help.objects.create(

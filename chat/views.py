@@ -200,7 +200,8 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                     "STRICTLY base your answers ONLY on the 'Information' and 'Additional Info' provided. "
                     "NEVER guess, assume, or invent answers. "
                     "If a customer asks a question unrelated to the business, politely redirect them to focus on business-related topics only. "
-                    "If a customer asks a business-related question and the answer is not found in the 'Information' and 'Additional Info', unclear or incomplete, IMMEDIATELY trigger the 'help' function to ask the admin/owner/manager for clarification. "
+                    "If a customer asks a business-related question and the answer is not found in the 'Information' and 'Additional Info', unclear or incomplete, IMMEDIATELY trigger the 'ask_manager_help' function to ask the admin/owner/manager for clarification. "
+                    "In case you need to apologize consider using the function 'ask_manager_help' first. "
                     "Under NO circumstances should you assume, invent, or provide information that is not explicitly found in the 'Information' and 'Additional Info'.\n\n"
                     + instruction(facebook_page_instance)
                 ),
@@ -225,18 +226,21 @@ def ai_process(user_profile, facebook_page_instance, first_run):
             messages.append({"role": "assistant", "content": chat.reply})
 
     # Add tool for changing topic if user is admin or user is not customer
-    if first_run and user_profile.user_type == 'admin':
+    if user_profile.user_type == 'admin':
         tools = tools or []  # Ensure tools is initialized if None
         tools.append(change_topic.generate_tools())
     
     # Add tool for customer when the system does not know what to say
-    if first_run and (user_profile.user_type != 'admin'):
+    if user_profile.user_type != 'admin':
         tools = tools or []  # Ensure tools is initialized if None
         tools.append(help.generate_tools())
+        print("###HELLO###", tools)
 
     # Attempt to generate a completion using the OpenAI API
     try:
         print("AI CALL", messages)
+        print("AI Tools", tools)
+
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=messages,
@@ -251,7 +255,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         if tool_calls:
             if any(tool_call.function.name == "change_topic" for tool_call in tool_calls):
                 response_content = change_topic.tool_function(tool_calls, user_profile, facebook_page_instance)
-            if any(tool_call.function.name == "help" for tool_call in tool_calls):
+            if any(tool_call.function.name == "ask_manager_help" for tool_call in tool_calls):
                 response_content = help.tool_function(tool_calls, user_profile)
             else:
                 response_content = tool_function(tool_calls, user_profile, facebook_page_instance)
