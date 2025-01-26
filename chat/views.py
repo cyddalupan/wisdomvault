@@ -55,8 +55,10 @@ def save_facebook_chat(request):
                 facebook_page_instance = FacebookPage.objects.get(page_id=user_profile.page_id)
                 message_text = event['message'].get('text')  # Message text sent by the user
 
+                print("event['message']", event['message'])
                  # Check for image attachment
                 if 'attachments' in event['message']:
+                    print("attachments")
                     for attachment in event['message']['attachments']:
                         if attachment['type'] == 'image':
                             image_url = attachment['payload']['url']
@@ -75,8 +77,8 @@ def save_facebook_chat(request):
                                     message_admin,
                                     facebook_page_instance
                                 )
-
-                if message_text:
+                elif message_text:
+                    print("message_text")
                     # Identify the user's task based on the message
                     identified_task = identify_task(message_text)
                     if identified_task:
