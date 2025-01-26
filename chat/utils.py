@@ -81,22 +81,18 @@ def get_facebook_user_name(user_id, access_token):
         return ""
 
 def summarizer(user_profile):
-    print("summarize function opened")
     try:
         # Fetch all unsummarized chats for the user
         unsummarized_chats = Chat.objects.filter(user=user_profile, is_summarized=False)
-        print("unsummarized_chats", unsummarized_chats)
         if not unsummarized_chats.exists():
             print(f"No unsummarized chats found for user with Facebook ID: {user_profile.name}")
             return None
 
         # Combine unsummarized chat messages
         chat_data = "\n".join([f"User: {chat.message}\nSystem: {chat.reply}" for chat in unsummarized_chats])
-        print("chat_data", chat_data)
 
         # Combine with existing summary if available
         existing_summary = user_profile.summary or ""
-        print("existing_summary", existing_summary)
 
         # Format messages array for summarization
         messages = [
@@ -114,8 +110,6 @@ def summarizer(user_profile):
             {"role": "user", "content": f"New Chat Data: {chat_data}"},
         ]
 
-        print("messages",messages)
-
         # Request a completion from the model
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -125,7 +119,6 @@ def summarizer(user_profile):
 
         # Extract the summarized text
         summarized_text = completion.choices[0].message.content
-        print("summarized_text",summarized_text)
 
         # Update the UserProfile summary
         user_profile.summary = summarized_text
@@ -134,7 +127,6 @@ def summarizer(user_profile):
         # Mark all processed chats as summarized
         unsummarized_chats.update(is_summarized=True)
 
-        print("Summary updated successfully.")
         return None
     except Exception as e:
         print(f"Error: {e}")
@@ -171,7 +163,6 @@ def summarize_sales(facebook_page_instance):
                 for i, row in enumerate(sales_data):
                     row_info = f"Row {i + 1}: {', '.join(row)}"
                     sales_message += row_info + "\n"
-            print("sales_message", sales_message)
         
             # Format messages array for summarization
             messages = [
@@ -191,7 +182,6 @@ def summarize_sales(facebook_page_instance):
             )
 
             summarized_text = completion.choices[0].message.content
-            print("summarized_text",summarized_text)
             facebook_page_instance.sales = summarized_text
                     
         except Exception as e:

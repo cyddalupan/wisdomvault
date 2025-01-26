@@ -43,7 +43,6 @@ def save_facebook_chat(request):
                 # Fetch the FacebookPage instance
                 facebook_page_instance = FacebookPage.objects.get(page_id=page_id)
                 # Create or retrieve the user profile
-                print("NAME:", get_facebook_user_name(sender_id, facebook_page_instance.token))
                 user_profile, created = UserProfile.objects.get_or_create(
                     facebook_id=sender_id,
                     defaults={
@@ -237,7 +236,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
 
     # Attempt to generate a completion using the OpenAI API
     try:
-        print("AI CALL", messages)
+        #print("AI CALL", messages)
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=messages,
