@@ -26,8 +26,8 @@ def topic_description():
     return (
         "Guide on the function 'change_topic':\n"
         "- inventory: View, add, edit, or delete product/item records. This is for managing the items available for sale.\n"
-        "- sales: Log new sales orders as the business owner when customers make purchases.\n"
-        "- analyze: Review and obtain insights from sales history and data. Use this for generating reports based on past sales activities.\n"
+        "- sales: Log new sales orders as the business owner when customers make purchases. do not switch here if user want to check sales status that is for analyze \n"
+        "- analyze: Review and obtain insights from sales history and data. Use this for generating reports based on past sales activities. trigger here is something like: what is the sale status for today, this week, etc. \n"
         "- attendance and reports are not available currently."
     )
 
