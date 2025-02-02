@@ -234,12 +234,12 @@ def ai_process(user_profile, facebook_page_instance, first_run):
     if user_profile.user_type != 'admin':
         tools = tools or []  # Ensure tools is initialized if None
         tools.append(help.generate_tools())
-        print("###HELLO###", tools)
+        #print("###HELLO###", tools)
 
     # Attempt to generate a completion using the OpenAI API
     try:
-        print("AI CALL", messages)
-        print("AI Tools", tools)
+        #print("AI CALL", messages)
+        #print("AI Tools", tools)
 
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
