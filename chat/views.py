@@ -78,7 +78,7 @@ def save_facebook_chat(request):
                                 )
                 elif message_text:
                     # Identify the user's task based on the message
-                    identified_task = identify_task(message_text)
+                    identified_task = identify_task(message_text, facebook_page_instance)
                     if identified_task:
                         if user_profile.task !=identified_task:
                             summarizer(user_profile)
@@ -169,7 +169,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         business_instruction = instruction(facebook_page_instance)  # Get business-related info based on current task
         
         # Fetch the possible topics dynamically
-        possible_topics = get_possible_topics()  # Assuming this function returns a list of possible topics
+        possible_topics = get_possible_topics(facebook_page_instance)
         
         # Prepare the system message dynamically with the current task and topic-specific instructions
         messages = [
@@ -184,7 +184,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                     f"The following topics are available: {', '.join(possible_topics)}. "
                     f"If the user mentions anything outside the listed topics, politely remind them to choose one from the available topics. "
                     # List topic informations.
-                    f"{topic_description()}"
+                    f"{topic_description(facebook_page_instance)}"
                 )
             }
         ]
@@ -227,12 +227,12 @@ def ai_process(user_profile, facebook_page_instance, first_run):
             messages.append({"role": "assistant", "content": chat.reply})
 
     # Add tool for changing topic if user is admin or user is not customer
-    if user_profile.user_type == 'admin':
+    if first_run and user_profile.user_type == 'admin':
         tools = tools or []  # Ensure tools is initialized if None
-        tools.append(change_topic.generate_tools())
+        tools.append(change_topic.generate_tools(facebook_page_instance))
     
     # Add tool for customer when the system does not know what to say
-    if user_profile.user_type != 'admin':
+    if first_run and user_profile.user_type != 'admin':
         tools = tools or []  # Ensure tools is initialized if None
         tools.append(help.generate_tools())
         #print("###HELLO###", tools)
@@ -242,8 +242,8 @@ def ai_process(user_profile, facebook_page_instance, first_run):
 
     # Attempt to generate a completion using the OpenAI API
     try:
-        print("AI CALL", messages)
-        print("AI Tools", tools)
+        #print("AI CALL", messages)
+        #print("AI Tools", tools)
 
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -257,11 +257,11 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         tool_calls = completion.choices[0].message.tool_calls
         print("tool_calls", tool_calls)
         if tool_calls:
-            if any(tool_call.function.name == "change_topic" for tool_call in tool_calls):
+            if  first_run and any(tool_call.function.name == "change_topic" for tool_call in tool_calls):
                 response_content = change_topic.tool_function(tool_calls, user_profile, facebook_page_instance)
-            if any(tool_call.function.name == "ask_manager_help" for tool_call in tool_calls):
+            if first_run and any(tool_call.function.name == "ask_manager_help" for tool_call in tool_calls):
                 response_content = help.tool_function(tool_calls, user_profile)
-            if any(tool_call.function.name == "save_name" for tool_call in tool_calls):
+            if first_run and any(tool_call.function.name == "save_name" for tool_call in tool_calls):
                 response_content = get_name_tool_function(tool_calls, user_profile)
             else:
                 response_content = tool_function(tool_calls, user_profile, facebook_page_instance)

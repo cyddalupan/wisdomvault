@@ -6,6 +6,7 @@ from googleapiclient.discovery import build
 from google.oauth2 import service_account
 
 from chat.models import Chat, UserProfile
+from page.models import FacebookPage
 
 load_dotenv()
 
@@ -19,17 +20,30 @@ class Topics(Enum):
     ATTENDANCE = "attendance"
     REPORTS = "reports"
 
-def get_possible_topics():
-    return [topic.value for topic in Topics]
+def get_possible_topics(facebook_page: FacebookPage):
+    topics = []
+    
+    if facebook_page.is_inventory:
+        topics.append(Topics.INVENTORY.value)
 
-def topic_description():
-    return (
-        "Guide on the function 'change_topic':\n"
-        "- inventory: View, add, edit, or delete product/item records. This is for managing the items available for sale.\n"
-        "- sales: Log new sales orders as the business owner when customers make purchases. do not switch here if user want to check sales status that is for analyze \n"
-        "- analyze: Review and obtain insights from sales history and data. Use this for generating reports based on past sales activities. trigger here is something like: what is the sale status for today, this week, etc. \n"
-        "- attendance and reports are not available currently."
-    )
+    if facebook_page.is_pos:  # Only allow sales and analyze if POS is enabled
+        topics.append(Topics.SALES.value)
+        topics.append(Topics.ANALYZE.value)
+
+    # Attendance and Reports are always unavailable per your instruction
+    return topics
+
+def topic_description(facebook_page: FacebookPage):
+    description = "Guide on the function 'change_topic':\n"
+
+    if facebook_page.is_inventory:
+        description += "- inventory: View, add, edit, or delete product/item records. This is for managing the items available for sale.\n"
+    
+    if facebook_page.is_pos:
+        description += "- sales: Log new sales orders as the business owner when customers make purchases. Do not switch here if the user wants to check sales status; that is for analyze.\n"
+        description += "- analyze: Review and obtain insights from sales history and data. Use this for generating reports based on past sales activities. Trigger here is something like: what is the sales status for today, this week, etc.\n"
+
+    return description
 
 # END TOPIC ZONE
 
