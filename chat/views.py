@@ -158,7 +158,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                 tools = analyze.generate_tools()
                 tool_function = analyze.tool_function
     if user_profile.user_type == 'customer':
-        if user_profile.task == "customer":
+        if user_profile.name:
             instruction = customer.instruction
             tools = customer.generate_tools()
             tool_function = customer.tool_function
