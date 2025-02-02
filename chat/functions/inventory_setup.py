@@ -67,6 +67,8 @@ def format_sheets(sheet_id):
             requests.append(add_sheet_request("Sales"))
         if "Sales Summary" not in existing_sheets:
             requests.append(add_sheet_request("Sales Summary"))
+        if "Leads" not in existing_sheets:
+            requests.append(add_sheet_request("Leads"))
 
         # Perform batch update to add missing sheets
         if requests:
@@ -78,10 +80,12 @@ def format_sheets(sheet_id):
         inventory_sheet_id = existing_sheets.get("Inventory", next(sheet['properties']['sheetId'] for sheet in sheets_metadata['sheets'] if sheet['properties']['title'] == "Inventory"))
         sales_sheet_id = existing_sheets.get("Sales", next(sheet['properties']['sheetId'] for sheet in sheets_metadata['sheets'] if sheet['properties']['title'] == "Sales"))
         sales_summary_sheet_id = existing_sheets.get("Sales Summary", next(sheet['properties']['sheetId'] for sheet in sheets_metadata['sheets'] if sheet['properties']['title'] == "Sales Summary"))
-
+        leads_sheet_id = existing_sheets.get("Leads", next(sheet['properties']['sheetId'] for sheet in sheets_metadata['sheets'] if sheet['properties']['title'] == "Leads"))
+        
         # Reorder sheets and format them
         reorder_sheets(service, sheet_id, dashboard_sheet_id, inventory_sheet_id, sales_summary_sheet_id, sales_sheet_id)
         format_inventory_sheet(service, sheet_id, inventory_sheet_id)
+        format_leads_sheet(service, sheet_id, leads_sheet_id)
         format_sales_sheet(service, sheet_id, sales_sheet_id)
         format_sales_summary_sheet(service, sheet_id, sales_summary_sheet_id)
         format_dashboard_sheet(service, sheet_id, dashboard_sheet_id, inventory_sheet_id, sales_summary_sheet_id, sales_sheet_id)
@@ -525,6 +529,199 @@ def format_sales_summary_sheet(service, sheet_id, sales_summary_sheet_id):
     service.spreadsheets().batchUpdate(
         spreadsheetId=sheet_id,
         body={"requests": [format_header_request, resize_columns_request, add_test_data_request]}
+    ).execute()
+
+    return True
+
+def format_leads_sheet(service, sheet_id, leads_sheet_id):
+    # Formatting definitions
+    def create_format(bg_color=None, text_color=None, bold=False, font_size=12, align="CENTER", border=None):
+        format_dict = {
+            "textFormat": {"bold": bold, "fontFamily": "Arial", "fontSize": font_size},
+            "horizontalAlignment": align
+        }
+        if bg_color:
+            format_dict["backgroundColor"] = bg_color
+        if text_color:
+            format_dict["textFormat"]["foregroundColor"] = text_color
+        if border:
+            format_dict["borders"] = border
+        return format_dict
+
+    # Header format for "User Leads"
+    user_leads_format = create_format(
+        bg_color={"red": 0.615, "green": 0.764, "blue": 0.902},  # #9dc3e6
+        text_color={"red": 0.067, "green": 0.067, "blue": 0.067},  # #111111
+        bold=True,  # Set to bold
+        font_size=21
+    )
+
+    # Create the request for merging cells A1 to G1
+    merge_cells_request = {
+        "mergeCells": {
+            "range": {
+                "sheetId": leads_sheet_id,
+                "startRowIndex": 0,
+                "endRowIndex": 1,
+                "startColumnIndex": 0,
+                "endColumnIndex": 7
+            },
+            "mergeType": "MERGE_ALL"
+        }
+    }
+
+    # Request to set the "User Leads" header
+    user_leads_header_request = {
+        "updateCells": {
+            "rows": [{
+                "values": [
+                    {"userEnteredValue": {"stringValue": "User Leads"}, "userEnteredFormat": user_leads_format}
+                ]
+            }],
+            "fields": "userEnteredValue,userEnteredFormat",
+            "start": {"sheetId": leads_sheet_id, "rowIndex": 0, "columnIndex": 0},
+        }
+    }
+
+    # Set height of the first row to double
+    row_height_request = {
+        "updateDimensionProperties": {
+            "range": {
+                "sheetId": leads_sheet_id,
+                "dimension": "ROWS",
+                "startIndex": 0,
+                "endIndex": 1,
+            },
+            "properties": {
+                "pixelSize": 40  # Assuming original height is 20, thus double it
+            },
+            "fields": "pixelSize"
+        }
+    }
+
+    # Add a black row under the header
+    black_row_format = create_format(bg_color={"red": 0, "green": 0, "blue": 0})  # Black background
+
+    black_row_request = {
+        "updateCells": {
+            "rows": [{
+                "values": [
+                    {"userEnteredValue": {"stringValue": ""}, "userEnteredFormat": black_row_format} 
+                    for _ in range(7)  # Filling A2 to G2
+                ]
+            }],
+            "fields": "userEnteredValue,userEnteredFormat",
+            "start": {"sheetId": leads_sheet_id, "rowIndex": 1, "columnIndex": 0},
+        }
+    }
+
+    # Header format for the leads sheet with border
+    leads_header_format = create_format(
+        bg_color={"red": 0.611, "green": 0.765, "blue": 0.890},  # #9cc2e5
+        text_color={"red": 0.067, "green": 0.067, "blue": 0.067},  # #111111
+        bold=True,
+        font_size=10,
+        border={
+            "top": {"style": "SOLID", "width": 2, "color": {"red": 1, "green": 1, "blue": 1}},
+            "bottom": {"style": "SOLID", "width": 2, "color": {"red": 1, "green": 1, "blue": 1}},
+            "left": {"style": "SOLID", "width": 2, "color": {"red": 1, "green": 1, "blue": 1}},
+            "right": {"style": "SOLID", "width": 2, "color": {"red": 1, "green": 1, "blue": 1}},
+        }
+    )
+
+    # Headers for the leads sheet
+    headers = ["Name", "Mobile", "Gender", "Age", "Address", "Birthday", "Status"]
+
+    # Requests for header formatting (using two rows for each header)
+    header_requests = []
+    for header in headers:
+        merged_cells_request = {
+            "mergeCells": {
+                "range": {
+                    "sheetId": leads_sheet_id,
+                    "startRowIndex": 2,
+                    "endRowIndex": 4,
+                    "startColumnIndex": headers.index(header),
+                    "endColumnIndex": headers.index(header) + 1
+                },
+                "mergeType": "MERGE_ALL"
+            }
+        }
+        header_requests.append(merged_cells_request)
+
+        header_row_request = {
+            "updateCells": {
+                "rows": [{
+                    "values": [
+                        {"userEnteredValue": {"stringValue": header}, "userEnteredFormat": leads_header_format}
+                    ]
+                }],
+                "fields": "userEnteredValue,userEnteredFormat",
+                "start": {"sheetId": leads_sheet_id, "rowIndex": 2, "columnIndex": headers.index(header)},
+            }
+        }
+        header_requests.append(header_row_request)
+
+    # Resize columns request
+    resize_columns_request = {
+        "updateDimensionProperties": {
+            "range": {"sheetId": leads_sheet_id, "dimension": "COLUMNS", "startIndex": 0, "endIndex": len(headers)},
+            "properties": {"pixelSize": 150},
+            "fields": "pixelSize",
+        }
+    }
+
+    # Sample data for the sheet
+    sample_data = [
+        ["John Doe", "1234567890", "Male", 30, "123 Main St, Anytown", "1993-05-15", "Active"],
+        ["Jane Smith", "0987654321", "Female", 25, "456 Elm St, Othertown", "1998-08-22", "Inactive"],
+        ["Sam Wilson", "1112223333", "Male", 45, "789 Oak St, Sometown", "1978-11-30", "Active"],
+    ]
+
+    # Generate requests for sample data
+    data_requests = [
+        {
+            "values": [
+                {"userEnteredValue": {("numberValue" if isinstance(val, (int, float)) else "stringValue"): val}}
+                for val in row
+            ]
+        } for row in sample_data
+    ]
+
+    populate_sample_data_request = {
+        "updateCells": {
+            "rows": data_requests,
+            "fields": "userEnteredValue",
+            "start": {"sheetId": leads_sheet_id, "rowIndex": 4, "columnIndex": 0},  # Adjusted to row 4 for data
+        }
+    }
+
+    # Request to remove gridlines
+    remove_gridlines_request = {
+        "updateSheetProperties": {
+            "properties": {
+                "sheetId": leads_sheet_id,
+                "gridProperties": {
+                    "hideGridlines": True
+                }
+            },
+            "fields": "gridProperties.hideGridlines"
+        }
+    }
+
+    # Batch update request
+    service.spreadsheets().batchUpdate(
+        spreadsheetId=sheet_id,
+        body={"requests": [
+            merge_cells_request,
+            user_leads_header_request,
+            row_height_request,  # Set row height
+            black_row_request,
+            *header_requests,  # Unpack header requests
+            resize_columns_request,
+            populate_sample_data_request,
+            remove_gridlines_request
+        ]}
     ).execute()
 
     return True
