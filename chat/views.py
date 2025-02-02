@@ -117,7 +117,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         return ""
     
     instruction = instruction
-    tools = None
+    tools = []
     tool_function = None
 
     # change task to customer when empty.
@@ -160,7 +160,8 @@ def ai_process(user_profile, facebook_page_instance, first_run):
     if user_profile.user_type == 'customer':
         if user_profile.name:
             instruction = customer.instruction
-            tools = customer.generate_tools()
+            if facebook_page_instance.is_online_selling:
+                tools = customer.generate_tools()
             tool_function = customer.tool_function
 
     # Build AI message with instruction based on task

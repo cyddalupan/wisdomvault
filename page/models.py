@@ -14,6 +14,7 @@ class FacebookPage(models.Model):
     is_pos = models.BooleanField(default=True)
     is_leads = models.BooleanField(default=True)
     is_scheduling = models.BooleanField(default=True)
+    is_online_selling = models.BooleanField(default=True)
 
     def __str__(self):
         return self.page_name

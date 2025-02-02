@@ -63,13 +63,18 @@ def instruction(facebook_page_instance, target_row=None):
     return (
         f"Information: {business_info}\n"
         f"Additional Info: {additional_info}\n"
-        f"Live Inventory: {additional_info}\n"
-        f"Use the 'sale' function if user wants to buy. Before completing the sale, confirm the details: "
-        f"Total cost and list of products being purchased. For reference, here is the active inventory stored on Google Sheets:\n"
-        f"{inventory}\n\n"
-        f"Please review the products and total cost, and confirm if you'd like to proceed with the sale."
-        "Do not sell if stocks is not enough."
+        + (
+            f"Live Inventory:\n{inventory}\n\n"
+            f"For reference, this is the active inventory stored on Google Sheets.\n\n"
+            f"Use the 'sale' function if the user wants to buy. Before completing the sale, confirm the details: "
+            f"Total cost and list of products being purchased.\n\n"
+            f"Please review the products and total cost, and confirm if you'd like to proceed with the sale. "
+            "Do not sell if stocks are not enough."
+            if facebook_page_instance.is_online_selling else
+            ""
+        )
     )
+
 
 
 def generate_tools():
