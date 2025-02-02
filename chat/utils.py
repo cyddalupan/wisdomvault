@@ -67,23 +67,6 @@ def send_image(recipient_id, image_url, facebook_page_instance):
     response = requests.post(post_url, json=message_data)
     return response.status_code
 
-def get_facebook_user_name(user_id, access_token):
-    print("get_facebook_user_name triggered", user_id, access_token)
-    url = f'https://graph.facebook.com/{user_id}'
-    params = {
-        'fields': 'name',
-        'access_token': access_token
-    }
-    
-    response = requests.get(url, params=params)
-    print("response", response)
-    if response.status_code == 200:
-        print("name", response.json().get('name'))
-        return response.json().get('name')
-    else:
-        print("no name")
-        return ""
-
 def summarizer(user_profile):
     try:
         # Fetch all unsummarized chats for the user

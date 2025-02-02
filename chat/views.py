@@ -6,10 +6,11 @@ from openai import OpenAI
 from django.http import JsonResponse, HttpResponse
 from chat import utils
 from chat.functions import analyze, change_topic, inventory, inventory_setup, other, pos, verify_user, customer, help, escalate
+from chat.functions.get_name import get_name_generate_tools, get_name_instruction, get_name_tool_function
 from chat.functions.task_utils import identify_task
 from page.models import FacebookPage
 from .models import Chat, UserProfile
-from chat.utils import get_facebook_user_name, get_possible_topics, send_image, topic_description, send_message, summarizer
+from chat.utils import get_possible_topics, send_image, topic_description, send_message, summarizer
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
 from dotenv import load_dotenv
@@ -48,7 +49,6 @@ def save_facebook_chat(request):
                     defaults={
                         'facebook_id': sender_id,
                         'page_id': page_id,
-                        'name': get_facebook_user_name(sender_id, facebook_page_instance.token),
                         'user_type': 'customer',
                         'task': 'customer',
                     }
@@ -204,6 +204,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                     "In case you need to apologize consider using the function 'ask_manager_help' first. "
                     "Under NO circumstances should you assume, invent, or provide information that is not explicitly found in the 'Information' and 'Additional Info'.\n\n"
                     + instruction(facebook_page_instance)
+                    + get_name_instruction(user_profile)
                 ),
             }
         ]
@@ -235,11 +236,14 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         tools = tools or []  # Ensure tools is initialized if None
         tools.append(help.generate_tools())
         #print("###HELLO###", tools)
+        if not user_profile.name:
+            tools.append(get_name_generate_tools())
+
 
     # Attempt to generate a completion using the OpenAI API
     try:
-        #print("AI CALL", messages)
-        #print("AI Tools", tools)
+        print("AI CALL", messages)
+        print("AI Tools", tools)
 
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -257,6 +261,8 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                 response_content = change_topic.tool_function(tool_calls, user_profile, facebook_page_instance)
             if any(tool_call.function.name == "ask_manager_help" for tool_call in tool_calls):
                 response_content = help.tool_function(tool_calls, user_profile)
+            if any(tool_call.function.name == "save_name" for tool_call in tool_calls):
+                response_content = get_name_tool_function(tool_calls, user_profile)
             else:
                 response_content = tool_function(tool_calls, user_profile, facebook_page_instance)
 

@@ -9,6 +9,12 @@ class FacebookPage(models.Model):
     additional_info = models.TextField(blank=True, null=True)
     sales = models.TextField(blank=True, null=True)
 
+    # Feature toggles
+    is_inventory = models.BooleanField(default=True)
+    is_pos = models.BooleanField(default=True)
+    is_leads = models.BooleanField(default=True)
+    is_scheduling = models.BooleanField(default=True)
+
     def __str__(self):
         return self.page_name
 
