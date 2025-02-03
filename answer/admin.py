@@ -29,7 +29,7 @@ class QuestionAnswerAdmin(admin.ModelAdmin):
         ]
         messages.append({"role": "user", "content": obj.question})
         completion = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4o",
             messages=messages,
         )
         response_content = completion.choices[0].message.content
