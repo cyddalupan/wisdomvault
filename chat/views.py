@@ -253,8 +253,8 @@ def ai_process(user_profile, facebook_page_instance, first_run):
 
     # Attempt to generate a completion using the OpenAI API
     try:
-        #print("AI CALL", messages)
-        #print("AI Tools", tools)
+        print("AI CALL", messages)
+        print("AI Tools", tools)
 
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -266,6 +266,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
 
         # Handle tool calls if present
         tool_calls = completion.choices[0].message.tool_calls
+        print("###tool_calls", tool_calls)
         if tool_calls:
             if  first_run and any(tool_call.function.name == "change_topic" for tool_call in tool_calls):
                 response_content = change_topic.tool_function(tool_calls, user_profile, facebook_page_instance)
@@ -275,7 +276,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                 response_content = get_name_tool_function(tool_calls, user_profile)
             if first_run and any(tool_call.function.name == "save_user_info" for tool_call in tool_calls):
                 response_content = leads.save_user_info(tool_calls, user_profile, facebook_page_instance)
-            else:
+            if tool_function:
                 response_content = tool_function(tool_calls, user_profile, facebook_page_instance)
 
             if not response_content and first_run:
