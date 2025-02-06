@@ -5,7 +5,7 @@ import requests
 from openai import OpenAI
 from django.http import JsonResponse, HttpResponse
 from chat import utils
-from chat.functions import analyze, change_topic, inventory, inventory_setup, other, pos, verify_user, customer, help, escalate
+from chat.functions import analyze, change_topic, inventory, inventory_setup, leads, other, pos, verify_user, customer, help, escalate
 from chat.functions.get_name import get_name_generate_tools, get_name_instruction, get_name_tool_function
 from chat.functions.task_utils import identify_task
 from page.models import FacebookPage
@@ -158,11 +158,19 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                 tools = analyze.generate_tools()
                 tool_function = analyze.tool_function
     if user_profile.user_type == 'customer':
-        if user_profile.name:
+        if user_profile.name and facebook_page_instance.is_online_selling:
             instruction = customer.instruction
             if facebook_page_instance.is_online_selling:
                 tools = customer.generate_tools()
             tool_function = customer.tool_function
+        # All Leads Info
+        leads_instruction = ""
+        user_details = None
+        if user_profile.name and facebook_page_instance.is_leads:
+            user_details = leads.get_user_details(facebook_page_instance, user_profile.facebook_id)
+            if not user_details:
+                leads_instruction = leads.instruction()
+                tools.append(leads.generate_tools())
 
     # Build AI message with instruction based on task
     if user_profile.user_type == "admin":
@@ -179,6 +187,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                 "content": (
                     f"Your name is KENSHI short for (Kiosk and Easy Navigation System for Handling Inventory). "
                     f"Speak in taglish, keep replies short, No markdown just emoji and proper spacing, and focus STRICTLY on the current topic: '{current_task}'. "
+                    f"be more casual, use 'po', 'opo', sir or maam"
                     f"Full Details of current topic: ({business_instruction}) "
                     f"Do not discuss anything unrelated unless the user shifts to a different task/topic"
                     f"In such cases, use the function 'change_topic' to automatically switch the topic to the relevant task "
@@ -197,6 +206,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                 "content": (
                     "Your name is KENSHI short for 'Kiosk and Easy Navigation System for Handling Inventory'. "
                     "Speak in taglish, keep replies short, No markdown just emoji and proper spacing. "
+                    "be more casual, use 'po', 'opo', sir or maam. know the customer and use emotion to sell. "
                     "Your purpose is to assist customers with inquiries about products, promotions, pricing, inventory, and other business-related topics. "
                     "STRICTLY base your answers ONLY on the 'Information' and 'Additional Info' provided. "
                     "NEVER guess, assume, or invent answers. "
@@ -206,6 +216,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                     "Under NO circumstances should you assume, invent, or provide information that is not explicitly found in the 'Information' and 'Additional Info'.\n\n"
                     + instruction(facebook_page_instance)
                     + get_name_instruction(user_profile)
+                    + leads_instruction
                 ),
             }
         ]
@@ -236,7 +247,6 @@ def ai_process(user_profile, facebook_page_instance, first_run):
     if first_run and user_profile.user_type != 'admin':
         tools = tools or []  # Ensure tools is initialized if None
         tools.append(help.generate_tools())
-        #print("###HELLO###", tools)
         if not user_profile.name:
             tools.append(get_name_generate_tools())
 
@@ -256,7 +266,6 @@ def ai_process(user_profile, facebook_page_instance, first_run):
 
         # Handle tool calls if present
         tool_calls = completion.choices[0].message.tool_calls
-        print("tool_calls", tool_calls)
         if tool_calls:
             if  first_run and any(tool_call.function.name == "change_topic" for tool_call in tool_calls):
                 response_content = change_topic.tool_function(tool_calls, user_profile, facebook_page_instance)
@@ -264,6 +273,8 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                 response_content = help.tool_function(tool_calls, user_profile)
             if first_run and any(tool_call.function.name == "save_name" for tool_call in tool_calls):
                 response_content = get_name_tool_function(tool_calls, user_profile)
+            if first_run and any(tool_call.function.name == "save_user_info" for tool_call in tool_calls):
+                response_content = leads.save_user_info(tool_calls, user_profile, facebook_page_instance)
             else:
                 response_content = tool_function(tool_calls, user_profile, facebook_page_instance)
 
