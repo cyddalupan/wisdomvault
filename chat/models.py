@@ -9,9 +9,10 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     task = models.CharField(max_length=255, default='', blank=True)
     summary = models.TextField(blank=True, null=True)
+    is_leads_complete = models.BooleanField(default=False)
 
     def __str__(self):
-        if self.user:
+        if self.name:
             return self.name
         return "No Name"
 

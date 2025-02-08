@@ -2,6 +2,8 @@ import os
 import json
 import traceback
 import requests
+from django.utils import timezone
+from datetime import timedelta
 from openai import OpenAI
 from django.http import JsonResponse, HttpResponse
 from chat import utils
@@ -165,12 +167,9 @@ def ai_process(user_profile, facebook_page_instance, first_run):
             tool_function = customer.tool_function
         # All Leads Info
         leads_instruction = ""
-        user_details = None
-        if user_profile.name and facebook_page_instance.is_leads:
-            user_details = leads.get_user_details(facebook_page_instance, user_profile.facebook_id)
-            if not user_details:
-                leads_instruction = leads.instruction()
-                tools.append(leads.generate_tools())
+        if user_profile.name and facebook_page_instance.is_leads and not user_profile.is_leads_complete:
+            leads_instruction = leads.instruction()
+            tools.append(leads.generate_tools())
 
     # Build AI message with instruction based on task
     if user_profile.user_type == "admin":
@@ -304,6 +303,32 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         )
 
     return response_content
+
+def get_users_for_follow_up(hours=6):
+    # New logic to encompass the entire hour leading to exactly 6 hours ago
+    start_time = timezone.now() - timedelta(hours=hours + 1)  # From one hour before 6 hours ago
+    end_time = timezone.now() - timedelta(hours=hours)  # Up to exactly 6 hours ago
+
+    users = UserProfile.objects.filter(
+        is_leads_complete=False,
+        chat__timestamp__range=(start_time, end_time),
+    ).exclude(chat__message='').distinct()
+
+    return users
+
+def my_cron_view(request):
+    users = get_users_for_follow_up(6)
+    print(users)  # For testing, to see the retrieved users
+
+    for user in users:
+        page_instance = FacebookPage.objects.filter(page_id=user.page_id).first()
+        
+        if page_instance:
+            response_text = "🌟 Hey there! Let's complete your info so we can contact you! 😊"
+            send_message(user.facebook_id, response_text, page_instance)
+            Chat.objects.create(user=user, message='', reply=response_text)
+
+    return HttpResponse("Messages sent successfully!")
 
 def chat_test_page(request):
     return render(request, 'chat_test.html')

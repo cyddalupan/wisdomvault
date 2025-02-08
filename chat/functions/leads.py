@@ -11,55 +11,6 @@ import time
 # This global cache will hold user data with fb_id as keys
 cached_user_data = {}
 
-def get_user_details(facebook_page_instance, fb_id):
-    global cached_user_data
-
-    current_time = time.time()
-
-    if fb_id in cached_user_data and current_time - cached_user_data[fb_id]['timestamp'] < 60:
-        print("Using cached user data...")
-        return cached_user_data[fb_id]['data']
-
-    print("Fetching new data from Google Sheets...")
-
-    if facebook_page_instance and getattr(facebook_page_instance, 'sheet_id', None):
-        sheet_id = facebook_page_instance.sheet_id
-
-        try:
-            service = get_service()
-
-            result = service.spreadsheets().values().get(
-                spreadsheetId=sheet_id,
-                range="Leads!A10:G"  # Specify the starting row and relevant columns
-            ).execute()
-
-            values = result.get('values', [])
-
-            if not values:
-                print("No data found in the 'Leads' sheet.")
-                return None
-            else:
-                for row in values:
-                    if len(row) > 0 and row[0] == fb_id:  # Check if row has at least one element
-                        cached_user_data[fb_id] = {
-                            'data': row,
-                            'timestamp': current_time
-                        }
-                        return row
-
-                cached_user_data[fb_id] = {
-                    'data': None,
-                    'timestamp': current_time
-                }
-                return None
-
-        except Exception as e:
-            print(f"Error fetching user details: {e}")
-            return None
-
-    return None
-    
-
 def instruction():
     return "\nIMPORTANT: If no relevant topic is being discussed, proactively ask the user for their information: Mobile, Gender, Area, Birthday. Trigger function save_user_info once the user provides the details."
 
@@ -133,6 +84,9 @@ def save_user_info(tool_calls, user_profile, facebook_page_instance):
                     ).execute()
                     if fb_id in cached_user_data:
                         del cached_user_data[fb_id]
+                    
+                    user_profile.is_leads_complete = True
+                    user_profile.save()
 
                     print("User information saved successfully.")
                     return "Salamat. ano pa ang matutulong ko sayo?"
