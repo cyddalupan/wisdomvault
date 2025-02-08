@@ -54,8 +54,6 @@ def tool_function(tool_calls, user_profile):
                 # Save the incoming message to the Chat model
                 Chat.objects.create(user=admin, message='', reply=message_admin)
                 send_message(admin.facebook_id, message_admin, facebook_page_instance)
-            
             summarizer(user_profile)
-
             return "⏳ Let me check with my manager. Wait lang po 🙏"
     return None
