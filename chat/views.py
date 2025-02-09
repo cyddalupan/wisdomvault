@@ -7,7 +7,7 @@ from datetime import timedelta
 from openai import OpenAI
 from django.http import JsonResponse, HttpResponse
 from chat import utils
-from chat.functions import analyze, change_topic, inventory, inventory_setup, leads, other, pos, verify_user, customer, help, escalate
+from chat.functions import analyze, change_topic, inventory, inventory_setup, leads, other, pos, schedule, verify_user, customer, help, escalate
 from chat.functions.get_name import get_name_generate_tools, get_name_instruction, get_name_tool_function
 from chat.functions.task_utils import identify_task
 from page.models import FacebookPage
@@ -170,6 +170,12 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         if user_profile.name and facebook_page_instance.is_leads and not user_profile.is_leads_complete:
             leads_instruction = leads.instruction()
             tools.append(leads.generate_tools())
+        
+        # All schedule Info
+        schedule_instruction = ""
+        if user_profile.name and facebook_page_instance.is_schedule:
+            schedule_instruction = schedule.instruction(facebook_page_instance)
+            tools.append(schedule.generate_tools())
 
     # Build AI message with instruction based on task
     if user_profile.user_type == "admin":
@@ -211,11 +217,12 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                     "NEVER guess, assume, or invent answers. "
                     "If a customer asks a question unrelated to the business, politely redirect them to focus on business-related topics only. "
                     "If a customer asks a business-related question and the answer is not found in the 'Information' and 'Additional Info', unclear or incomplete, IMMEDIATELY trigger the 'ask_manager_help' tool function to ask the admin/owner/manager for clarification. "
-                    "In case you need to apologize consider using the tool function 'ask_manager_help' first. "
+                    "Never apologize instead ask manager using tool function 'ask_manager_help'. "
                     "Under NO circumstances should you assume, invent, or provide information that is not explicitly found in the 'Information' and 'Additional Info'.\n\n"
                     + instruction(facebook_page_instance)
                     + get_name_instruction(user_profile)
                     + leads_instruction
+                    + schedule_instruction
                 ),
             }
         ]
@@ -275,6 +282,8 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                 response_content = get_name_tool_function(tool_calls, user_profile)
             elif first_run and any(tool_call.function.name == "save_user_info" for tool_call in tool_calls):
                 response_content = leads.save_user_info(tool_calls, user_profile, facebook_page_instance)
+            elif first_run and any(tool_call.function.name == "book_schedule" for tool_call in tool_calls):
+                response_content = schedule.book_schedule(tool_calls, user_profile, facebook_page_instance)
             elif tool_function:
                 response_content = tool_function(tool_calls, user_profile, facebook_page_instance)
 
@@ -336,7 +345,11 @@ def chat_test_page(request):
 
 def function_tester(request):
     # Call the inventory setup function
-    inventory_setup.format_sheets("1u-Vy9b3KD4l3Ne2ZM3DXg8NmPxzv_QHJzXtzVPKeHu8")
+    #inventory_setup.format_sheets("1u-Vy9b3KD4l3Ne2ZM3DXg8NmPxzv_QHJzXtzVPKeHu8")
+    facebook_page_instance = FacebookPage.objects.get(page_id="123456789")
+    bookings = schedule.available_schedule(facebook_page_instance)
+    #bookings = schedule.save_booking(facebook_page_instance, 16, 54321, "jon jon", "09882727321", "nakaka baliw")
+    print("## bookings", bookings)
     
     # Return a simple HTTP response to confirm it worked
     return HttpResponse("Inventory setup function executed successfully.")
