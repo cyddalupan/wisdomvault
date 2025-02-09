@@ -17,6 +17,7 @@ class Topics(Enum):
     INVENTORY = "inventory"
     SALES = "sales"
     ANALYZE =  "analyze"
+    SCHEDULE =  "schedule"
     ATTENDANCE = "attendance"
     REPORTS = "reports"
 
@@ -29,6 +30,9 @@ def get_possible_topics(facebook_page: FacebookPage):
     if facebook_page.is_pos:  # Only allow sales and analyze if POS is enabled
         topics.append(Topics.SALES.value)
         topics.append(Topics.ANALYZE.value)
+    
+    if facebook_page.is_schedule:
+        topics.append(Topics.SCHEDULE.value)
 
     # Attendance and Reports are always unavailable per your instruction
     return topics
@@ -42,6 +46,9 @@ def topic_description(facebook_page: FacebookPage):
     if facebook_page.is_pos:
         description += "- sales: Log new sales orders as the business owner when customers make purchases. Do not switch here if the user wants to check sales status; that is for analyze.\n"
         description += "- analyze: Review and obtain insights from sales history and data. Use this for generating reports based on past sales activities. Trigger here is something like: what is the sales status for today, this week, etc.\n"
+
+    if facebook_page.is_schedule:
+        description += "- schedule: View the latest schedules and availability for bookings. For any schedule-related questions, use this option. Please remember to update the spreadsheet to reflect any changes in the schedule.\n"
 
     return description
 

@@ -7,7 +7,7 @@ from datetime import timedelta
 from openai import OpenAI
 from django.http import JsonResponse, HttpResponse
 from chat import utils
-from chat.functions import analyze, change_topic, inventory, inventory_setup, leads, other, pos, schedule, verify_user, customer, help, escalate
+from chat.functions import analyze, change_topic, inventory, inventory_setup, leads, other, pos, schedule, schedule_admin, verify_user, customer, help, escalate
 from chat.functions.get_name import get_name_generate_tools, get_name_instruction, get_name_tool_function
 from chat.functions.task_utils import identify_task
 from page.models import FacebookPage
@@ -159,6 +159,10 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                 instruction = analyze.instruction
                 tools = analyze.generate_tools()
                 tool_function = analyze.tool_function
+            elif user_profile.task == "schedule":
+                instruction = schedule_admin.instruction
+                tools = schedule_admin.generate_tools()
+                tool_function = schedule_admin.tool_function
     if user_profile.user_type == 'customer':
         instruction = customer.instruction
         if user_profile.name:
@@ -347,7 +351,8 @@ def function_tester(request):
     # Call the inventory setup function
     #inventory_setup.format_sheets("1u-Vy9b3KD4l3Ne2ZM3DXg8NmPxzv_QHJzXtzVPKeHu8")
     facebook_page_instance = FacebookPage.objects.get(page_id="123456789")
-    bookings = schedule.available_schedule(facebook_page_instance)
+    #bookings = schedule.available_schedule(facebook_page_instance)
+    bookings = schedule_admin.latest_data(facebook_page_instance)
     #bookings = schedule.save_booking(facebook_page_instance, 16, 54321, "jon jon", "09882727321", "nakaka baliw")
     print("## bookings", bookings)
     
