@@ -7,12 +7,12 @@ from datetime import timedelta
 from openai import OpenAI
 from django.http import JsonResponse, HttpResponse
 from chat import utils
-from chat.functions import analyze, change_topic, inventory, inventory_setup, leads, other, pos, schedule, schedule_admin, verify_user, customer, help, escalate
+from chat.functions import analyze, inventory, inventory_setup, leads, other, pos, schedule, schedule_admin, verify_user, customer, help, escalate
+from chat.functions.categorizer import get_possible_topics, getCategory, topic_description
 from chat.functions.get_name import get_name_generate_tools, get_name_instruction, get_name_tool_function
-from chat.functions.task_utils import identify_task
 from page.models import FacebookPage
 from .models import Chat, UserProfile
-from chat.utils import get_possible_topics, send_image, topic_description, send_message, summarizer
+from chat.utils import getChatHistory, send_image, send_message
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
 from dotenv import load_dotenv
@@ -79,14 +79,6 @@ def save_facebook_chat(request):
                                     facebook_page_instance
                                 )
                 elif message_text:
-                    # Identify the user's task based on the message
-                    identified_task = identify_task(message_text, facebook_page_instance)
-                    if identified_task:
-                        if user_profile.task !=identified_task:
-                            summarizer(user_profile)
-                        user_profile.task = identified_task
-                        user_profile.save()
-
                     # Save the incoming message to the Chat model
                     chat = Chat.objects.create(user=user_profile, message=message_text, reply='')
 
@@ -107,12 +99,11 @@ def save_facebook_chat(request):
     return JsonResponse({'error': 'Invalid request method'}, status=400)
 
 def ai_process(user_profile, facebook_page_instance, first_run):
-    # Retrieve the last 12 chat history for this user
-    chat_history = Chat.objects.filter(user=user_profile, is_summarized=False).order_by('-timestamp')
-    chat_history = list(chat_history)[::-1]  # Reverse to maintain correct chronological order
-    if len(chat_history) > 6:
-        # Trigger the summarizer function if there are more than 6 chats
-        summarizer(user_profile)
+    chat_history = getChatHistory(user_profile)
+
+    print("Current Category", user_profile.task)
+    category = getCategory(user_profile, chat_history, facebook_page_instance)
+    print("New Category", category)
 
     # Initial empty instruction and tools setup
     def instruction(facebook_page_instance):
@@ -184,7 +175,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
     # Build AI message with instruction based on task
     if user_profile.user_type == "admin":
         current_task = user_profile.task.lower()  # Current task from user_profile
-        business_instruction = instruction(facebook_page_instance)  # Get business-related info based on current task
+        topic_instruction = instruction(facebook_page_instance)  # Get business-related info based on current task
         
         # Fetch the possible topics dynamically
         possible_topics = get_possible_topics(facebook_page_instance)
@@ -197,11 +188,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                     f"Your name is KENSHI short for (Kiosk and Easy Navigation System for Handling Inventory). "
                     f"Speak in taglish, keep replies short, No markdown just emoji and proper spacing, and focus STRICTLY on the current topic: '{current_task}'. "
                     f"be more casual, use 'po', 'opo', sir or maam"
-                    f"Full Details of current topic: ({business_instruction}) "
-                    f"Do not discuss anything unrelated unless the user shifts to a different task/topic"
-                    f"In such cases, use the function 'change_topic' to automatically switch the topic to the relevant task "
-                    f"The following topics are available: {', '.join(possible_topics)}. "
-                    f"If the user mentions anything outside the listed topics, politely remind them to choose one from the available topics. "
+                    f"Full Details of current topic: ({topic_instruction}) "
                     # List topic informations.
                     f"{topic_description(facebook_page_instance)}"
                 )
@@ -247,11 +234,6 @@ def ai_process(user_profile, facebook_page_instance, first_run):
             messages.append({"role": "user", "content": chat.message})
         if chat.reply and chat.reply != "":
             messages.append({"role": "assistant", "content": chat.reply})
-
-    # Add tool for changing topic if user is admin or user is not customer
-    if first_run and user_profile.user_type == 'admin':
-        tools = tools or []  # Ensure tools is initialized if None
-        tools.append(change_topic.generate_tools(facebook_page_instance))
     
     # Add tool for customer when the system does not know what to say
     if first_run and user_profile.user_type != 'admin':
@@ -278,9 +260,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         tool_calls = completion.choices[0].message.tool_calls
         print("###tool_calls", tool_calls)
         if tool_calls:
-            if  first_run and any(tool_call.function.name == "change_topic" for tool_call in tool_calls):
-                response_content = change_topic.tool_function(tool_calls, user_profile, facebook_page_instance)
-            elif first_run and any(tool_call.function.name == "ask_manager_help" for tool_call in tool_calls):
+            if first_run and any(tool_call.function.name == "ask_manager_help" for tool_call in tool_calls):
                 response_content = help.tool_function(tool_calls, user_profile)
             elif first_run and any(tool_call.function.name == "save_name" for tool_call in tool_calls):
                 response_content = get_name_tool_function(tool_calls, user_profile)

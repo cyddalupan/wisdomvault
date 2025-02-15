@@ -1,58 +1,24 @@
 import requests
 from openai import OpenAI
 from dotenv import load_dotenv
-from enum import Enum
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 
-from chat.models import Chat, UserProfile
-from page.models import FacebookPage
+from chat.models import Chat
 
 load_dotenv()
 
 client = OpenAI()
 
-# START TOPIC ZONE
-class Topics(Enum):
-    INVENTORY = "inventory"
-    SALES = "sales"
-    ANALYZE =  "analyze"
-    SCHEDULE =  "schedule"
-    ATTENDANCE = "attendance"
-    REPORTS = "reports"
 
-def get_possible_topics(facebook_page: FacebookPage):
-    topics = []
-    
-    if facebook_page.is_inventory:
-        topics.append(Topics.INVENTORY.value)
-
-    if facebook_page.is_pos:  # Only allow sales and analyze if POS is enabled
-        topics.append(Topics.SALES.value)
-        topics.append(Topics.ANALYZE.value)
-    
-    if facebook_page.is_schedule:
-        topics.append(Topics.SCHEDULE.value)
-
-    # Attendance and Reports are always unavailable per your instruction
-    return topics
-
-def topic_description(facebook_page: FacebookPage):
-    description = "Guide on the function 'change_topic':\n"
-
-    if facebook_page.is_inventory:
-        description += "- inventory: View, add, edit, or delete product/item records. This is for managing the items available for sale.\n"
-    
-    if facebook_page.is_pos:
-        description += "- sales: Log new sales orders as the business owner when customers make purchases. Do not switch here if the user wants to check sales status; that is for analyze.\n"
-        description += "- analyze: Review and obtain insights from sales history and data. Use this for generating reports based on past sales activities. Trigger here is something like: what is the sales status for today, this week, etc.\n"
-
-    if facebook_page.is_schedule:
-        description += "- schedule: View the latest schedules and availability for bookings. For any schedule-related questions, use this option. Please remember to update the spreadsheet to reflect any changes in the schedule.\n"
-
-    return description
-
-# END TOPIC ZONE
+def getChatHistory(user_profile):
+    # Retrieve the last 6 chat history for this user
+    chat_history = Chat.objects.filter(user=user_profile, is_summarized=False).order_by('-timestamp')
+    chat_history = list(chat_history)[::-1]  # Reverse to maintain correct chronological order
+    if len(chat_history) > 6:
+        # Trigger the summarizer function if there are more than 6 chats
+        summarizer(user_profile)
+    return chat_history
 
 def get_service():
     SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
@@ -194,4 +160,3 @@ def summarize_sales(facebook_page_instance):
         except Exception as e:
             sales_message = f"An error occurred: {str(e)}"
     return None
-        
