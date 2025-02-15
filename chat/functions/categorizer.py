@@ -115,7 +115,6 @@ def getCategory(user_profile, chat_history, facebook_page):
         tools=tools
     )
 
-
     tool_calls = completion.choices[0].message.tool_calls or []
     print("category tool_calls", tool_calls)
     for tool_call in tool_calls:

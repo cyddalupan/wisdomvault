@@ -7,9 +7,9 @@ from datetime import timedelta
 from openai import OpenAI
 from django.http import JsonResponse, HttpResponse
 from chat import utils
-from chat.functions import analyze, inventory, inventory_setup, leads, other, pos, schedule, schedule_admin, verify_user, customer, help, escalate
+from chat.functions import analyze, inventory, leads, other, pos, schedule, schedule_admin, customer, help, escalate
 from chat.functions.categorizer import get_possible_topics, getCategory, topic_description
-from chat.functions.get_name import get_name_generate_tools, get_name_instruction, get_name_tool_function
+from chat.functions.get_name import bypass_get_name
 from page.models import FacebookPage
 from .models import Chat, UserProfile
 from chat.utils import getChatHistory, send_image, send_message
@@ -101,10 +101,6 @@ def save_facebook_chat(request):
 def ai_process(user_profile, facebook_page_instance, first_run):
     chat_history = getChatHistory(user_profile)
 
-    print("Current Category", user_profile.task)
-    category = getCategory(user_profile, chat_history, facebook_page_instance)
-    print("New Category", category)
-
     # Initial empty instruction and tools setup
     def instruction(facebook_page_instance):
         return ""
@@ -118,6 +114,12 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         user_profile.task == "customer"
         user_profile.save()
 
+    # Bypass All to get name
+    if not user_profile.name:
+        get_name_response = bypass_get_name(chat_history, user_profile)
+        if get_name_response:
+            return get_name_response
+
     # Determine the task and set up instructions, tools, and functions
     if user_profile.user_type == 'admin':
         # Escalete before anything else
@@ -125,16 +127,10 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         if activeHelp:
             return escalate.bypass(activeHelp, chat_history, user_profile, facebook_page_instance)
 
+        getCategory(user_profile, chat_history, facebook_page_instance)
+
         if not instruction(facebook_page_instance):
-            if user_profile.task == "verify_user":
-                instruction = verify_user.instruction
-                tools = verify_user.generate_tools()
-                tool_function = verify_user.tool_function
-            elif user_profile.task == "inventory_setup":
-                instruction = inventory_setup.instruction
-                tools = inventory_setup.generate_tools()
-                tool_function = inventory_setup.tool_function
-            elif user_profile.task == "inventory":
+            if user_profile.task == "inventory":
                 instruction = inventory.instruction
                 tools = inventory.generate_tools()
                 tool_function = inventory.tool_function
@@ -156,19 +152,19 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                 tool_function = schedule_admin.tool_function
     if user_profile.user_type == 'customer':
         instruction = customer.instruction
-        if user_profile.name:
-            if facebook_page_instance.is_online_selling:
-                tools = customer.generate_tools()
-            tool_function = customer.tool_function
+    
+        if facebook_page_instance.is_online_selling:
+            tools = customer.generate_tools()
+        tool_function = customer.tool_function
         # All Leads Info
         leads_instruction = ""
-        if user_profile.name and facebook_page_instance.is_leads and not user_profile.is_leads_complete:
+        if facebook_page_instance.is_leads and not user_profile.is_leads_complete:
             leads_instruction = leads.instruction()
             tools.append(leads.generate_tools())
         
         # All schedule Info
         schedule_instruction = ""
-        if user_profile.name and facebook_page_instance.is_schedule:
+        if facebook_page_instance.is_schedule:
             schedule_instruction = schedule.instruction(facebook_page_instance)
             tools.append(schedule.generate_tools())
 
@@ -211,7 +207,6 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                     "Never apologize instead ask manager using tool function 'ask_manager_help'. "
                     "Under NO circumstances should you assume, invent, or provide information that is not explicitly found in the 'Information' and 'Additional Info'.\n\n"
                     + instruction(facebook_page_instance)
-                    + get_name_instruction(user_profile)
                     + leads_instruction
                     + schedule_instruction
                 ),
@@ -239,9 +234,6 @@ def ai_process(user_profile, facebook_page_instance, first_run):
     if first_run and user_profile.user_type != 'admin':
         tools = tools or []  # Ensure tools is initialized if None
         tools.append(help.generate_tools())
-        if not user_profile.name:
-            tools.append(get_name_generate_tools())
-
 
     # Attempt to generate a completion using the OpenAI API
     try:
@@ -262,8 +254,6 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         if tool_calls:
             if first_run and any(tool_call.function.name == "ask_manager_help" for tool_call in tool_calls):
                 response_content = help.tool_function(tool_calls, user_profile)
-            elif first_run and any(tool_call.function.name == "save_name" for tool_call in tool_calls):
-                response_content = get_name_tool_function(tool_calls, user_profile)
             elif first_run and any(tool_call.function.name == "save_user_info" for tool_call in tool_calls):
                 response_content = leads.save_user_info(tool_calls, user_profile, facebook_page_instance)
             elif first_run and any(tool_call.function.name == "book_schedule" for tool_call in tool_calls):
