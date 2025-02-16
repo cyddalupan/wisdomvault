@@ -1,6 +1,6 @@
 import time
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from chat.utils import get_service
 
@@ -12,6 +12,11 @@ cached_data = {
 
 cached_available_data = {
     'data': None,
+    'timestamp': 0
+}
+
+cached_booking_data = {
+    'data': {},
     'timestamp': 0
 }
 
@@ -81,7 +86,7 @@ def available_schedule(facebook_page_instance):
                     available_message = "Available Dates from Bookings Data:\n"
                     current_date = datetime.now()
 
-                    for i, row in enumerate(values[2:], start=2):  # Assuming the first two rows are headers
+                    for i, row in enumerate(values[6:], start=2):  # Assuming the first two rows are headers
                         # Check if the second column (date) exists and is not empty
                         date_str = row[2] if len(row) > 2 else None
                         name = row[5] if len(row) > 5 else None
@@ -100,7 +105,53 @@ def available_schedule(facebook_page_instance):
 
     return cached_available_data['data']
 
-# Fix Save Booking
+def get_booking_date(facebook_page_instance, fb_id):
+    global cached_booking_data  # Use the global cache
+
+    # Check if the cached data is older than 30 seconds
+    current_time = time.time()
+    if current_time - cached_booking_data['timestamp'] > 30:
+        print("Fetching bookings from Google Sheets...")
+        if facebook_page_instance and getattr(facebook_page_instance, 'sheet_id', None):
+            sheet_id = facebook_page_instance.sheet_id
+
+            try:
+                # Initialize the Sheets API service
+                service = get_service()
+
+                # Read the data from the "Bookings" sheet
+                result = service.spreadsheets().values().get(
+                    spreadsheetId=sheet_id,
+                    range="Bookings"
+                ).execute()
+
+                values = result.get('values', [])
+                bookings = {}
+
+                if values:
+                    current_date = datetime.now()
+
+                    for row in values[2:]:  # Assuming the first two rows are headers
+                        # Check if the second column (date) and fifth column (fb_id) exist
+                        date_str = row[2] if len(row) > 2 else None
+                        fb_id_cell = row[4] if len(row) > 4 else None
+
+                        if date_str and fb_id_cell:  # Proceed if there's a date and an fb_id
+                            date = datetime.strptime(date_str, '%Y-%m-%d')
+                            if date >= current_date:
+                                bookings[fb_id_cell] = date_str
+
+                # Cache the bookings data and timestamp
+                cached_booking_data['data'] = bookings
+                cached_booking_data['timestamp'] = current_time
+
+            except Exception as e:
+                print(f"Error fetching bookings: {e}")
+                cached_booking_data['data'] = {}
+
+    # Return the booking date if it exists
+    return cached_booking_data['data'].get(fb_id, None)
+
 def save_booking(facebook_page_instance, row, fb_id, name, mobile, remarks=None):
     if facebook_page_instance and getattr(facebook_page_instance, 'sheet_id', None):
         sheet_id = facebook_page_instance.sheet_id
@@ -153,44 +204,158 @@ def save_booking(facebook_page_instance, row, fb_id, name, mobile, remarks=None)
     else:
         return "Facebook page instance or sheet_id is missing."
 
-def instruction(facebook_page_instance):
+def cancel_booking(facebook_page_instance, fb_id):
+    if facebook_page_instance and getattr(facebook_page_instance, 'sheet_id', None):
+        sheet_id = facebook_page_instance.sheet_id
+
+        try:
+            # Initialize the Sheets API service
+            service = get_service()
+
+            # Retrieve all rows in the bookings sheet
+            result = service.spreadsheets().values().get(
+                spreadsheetId=sheet_id,
+                range="Bookings!A2:H"
+            ).execute()
+
+            # Get the list of rows (values)
+            rows = result.get('values', [])
+
+            # Current date for comparison
+            today = datetime.now().date()
+
+            for i, row in enumerate(rows, start=2):  # start=2 to account for the actual row number in the sheet
+                if len(row) < 5:
+                    continue  # Skip incomplete rows
+                
+                # Extract date and fb_id from the row
+                booking_date_str = row[2]  # Assuming the date is in column C
+                current_fb_id = row[4]  # Assuming fb_id is in column E
+
+                # Parse the date from the spreadsheet
+                try:
+                    booking_date = datetime.strptime(booking_date_str, "%Y-%m-%d").date()
+                except ValueError:
+                    continue  # Skip rows with invalid dates
+
+                # Check if the date is in the future and fb_id matches
+                if booking_date > today and current_fb_id == fb_id:
+                    # Prepare the updated row data indicating cancellation
+                    updated_values = [
+                        row[0],  # Keep existing value in column A
+                        row[1],  # Keep existing value in column B
+                        row[2],  # Keep existing value in column C (Date)
+                        row[3],  # Keep existing value in column D (Time)
+                        "",      # Clear FB_ID
+                        "",      # Clear Name
+                        "",      # Clear Mobile
+                        ""       # Clear Remarks
+                    ]
+
+                    # Prepare the request body for the update
+                    body = {
+                        'values': [updated_values]
+                    }
+
+                    # Update the row in the spreadsheet
+                    service.spreadsheets().values().update(
+                        spreadsheetId=sheet_id,
+                        range=f"Bookings!A{i}:H{i}",
+                        valueInputOption="USER_ENTERED",
+                        body=body
+                    ).execute()
+
+                    return f"Booking cancelled for fb_id {fb_id} on row {i}."
+
+            return "No future booking found with the given fb_id."
+
+        except Exception as e:
+            return f"Error cancelling booking: {e}"
+    else:
+        return "Facebook page instance or sheet_id is missing."
+
+def instruction(facebook_page_instance, facebook_id):
+    booking_date_str = get_booking_date(facebook_page_instance, facebook_id)
     schedules = available_schedule(facebook_page_instance)
     current_datetime = datetime.now().strftime("%Y-%m-%d %I:%M %p")
-    return (f"\nIMPORTANT: If no relevant topic is being discussed or if you don't know what to say, proactively suggest booking a schedule. "
-            f"Do not walk in without a schedule; please book a schedule first. "
-            f"We only book schedules that are in the available schedules. If there are no available schedules, inform the user that there are none at the moment and suggest checking other times. "
-            f"Make sure to check today's date and time: {current_datetime}. "
-            f"Only Recommend an available schedule from the list gathered earlier (sheet row) to the user. "
-            f"Gather the date, time (sheet row), mobile number, and optional remarks. "
-            f"Use the book_schedule tool call function when booking a schedule with us. "
-            f"\n\nAvailable schedules from Google Sheets:\n{schedules}")
+    
+    if booking_date_str:
+        # Parse the existing booking date
+        booking_date = datetime.strptime(booking_date_str, '%Y-%m-%d')
+        days_until_booking = (booking_date - datetime.now()).days
+        
+        if days_until_booking > 2:
+            return (f"\nINSTRUCTION: The user already has a booking scheduled on {booking_date_str}. "
+                    f"If the user wishes to cancel, inform them that they can do so since the booking is more than 2 days from today. "
+                    f"Trigger the 'cancel_booking' tool function to facilitate the cancellation. "
+                    f"Ensure cancellations happen at least 2 days in advance of the booking date.")
+        else:
+            return (f"\nINSTRUCTION: The user already has a booking scheduled on {booking_date_str}. "
+                    f"Do not offer cancellations since the booking is within 2 days. "
+                    f"Advise the user to adhere to their scheduled appointment.")
+    else:
+        return (f"\nINSTRUCTION: If the conversation lacks context or direction, suggest booking a schedule. "
+                f"Advise the user not to visit without a schedule; booking is required. "
+                f"Only offer schedules that are listed in the available schedules. "
+                f"Inform the user about the unavailability of schedules if none exist, and suggest trying again later. "
+                f"Provide the current date and time: {current_datetime}. "
+                f"Recommend an available schedule from the gathered list. "
+                f"Collect necessary details such as date, time, mobile number, and optional remarks. "
+                f"Use the 'book_schedule' tool function to assist in booking schedules. "
+                f"\n\nAvailable schedules from Google Sheets:\n{schedules}")
 
-def generate_tools():
-    return {
-        "type": "function",
-        "function": {
-            "name": "book_schedule",
-            "description": "user books a schedule with us.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "row_number": {
-                        "type": "integer",
-                        "description": "row number of the schedule selected",
+def generate_tools(facebook_page_instance, facebook_id):
+    booking_date_str = get_booking_date(facebook_page_instance, facebook_id)
+
+    if booking_date_str:
+        booking_date = datetime.strptime(booking_date_str, '%Y-%m-%d')
+        days_until_booking = (booking_date - datetime.now()).days
+        if days_until_booking > 2:
+            return {
+                "type": "function",
+                    "function": {
+                        "name": "cancel_booking",
+                        "description": "cancel users booking.",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "confirmation": {
+                                    "type": "boolean",
+                                    "description": "user confirms to cancel booking",
+                                },
+                            },
+                            "required": ["confirmation"],
+                        },
+                    }
+                }
+        else:
+            return None
+    else:
+        return {
+            "type": "function",
+            "function": {
+                "name": "book_schedule",
+                "description": "user books a schedule with us.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "row_number": {
+                            "type": "integer",
+                            "description": "row number of the schedule selected",
+                        },
+                        "mobile": {
+                            "type": "string",
+                            "description": "user's mobile number",
+                        },
+                        "remarks": {
+                            "type": "string",
+                            "description": "optional user's remarks or additional info for the schedule",
+                        },
                     },
-                    "mobile": {
-                        "type": "string",
-                        "description": "user's mobile number",
-                    },
-                    "remarks": {
-                        "type": "string",
-                        "description": "optional user's remarks or additional info for the schedule",
-                    },
+                    "required": ["row_number", "mobile"],
                 },
-                "required": ["row_number", "mobile"],
-            },
+            }
         }
-    }
 
 def book_schedule(tool_calls, user_profile, facebook_page_instance):
     for tool_call in tool_calls:
@@ -202,10 +367,16 @@ def book_schedule(tool_calls, user_profile, facebook_page_instance):
         row_number = arguments_dict.get('row_number', 0)
         mobile = arguments_dict.get('mobile', '')
         remarks = arguments_dict.get('remarks', '')
+        confirmation = arguments_dict.get('confirmation', False)
 
         if function_name == "book_schedule":
             save_response = save_booking(facebook_page_instance, row_number, fb_id, name, mobile, remarks)
             print("Save Booking Response:", save_response)
             return "🎉 Your booking has been successfully made! Thank you! 📅"
-
+        
+        if function_name == "cancel_booking":
+            if confirmation:
+                save_response = cancel_booking(facebook_page_instance, fb_id)
+                print("Cancel Booking Response:", save_response)
+                return "🎉 Your booking has been successfully made! Thank you! 📅"
     return None
