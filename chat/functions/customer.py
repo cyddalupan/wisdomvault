@@ -1,24 +1,16 @@
 import json
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-from google.oauth2 import service_account
-from google.oauth2 import service_account
 import time
 
+from chat.cache import get_cache, update_cache
 from chat.functions.pos import create_sale
 from chat.utils import get_service, summarizer
 
-# Global variable to store the fetched data and its timestamp
-cached_data = {
-    'data': None,
-    'timestamp': 0
-}
-
 def instruction(facebook_page_instance, target_row=None):
-    global cached_data  # Use the global variable
-
     # Check if the cached data is older than 20 seconds
     current_time = time.time()
+    cache_type = "inventory_sheet"
+    page_id = facebook_page_instance.page_id
+    cached_data = get_cache(page_id, cache_type)
     if current_time - cached_data['timestamp'] > 20:
         print("Fetching new data from Google Sheets...")
         if facebook_page_instance and getattr(facebook_page_instance, 'sheet_id', None):
@@ -47,8 +39,7 @@ def instruction(facebook_page_instance, target_row=None):
                         inventory_message += row_info + "\n"
                 
                 # Cache the data and timestamp
-                cached_data['data'] = inventory_message
-                cached_data['timestamp'] = current_time
+                update_cache(page_id, cache_type, inventory_message)
 
             except Exception as e:
                 return f"Error fetching inventory data: {e}"
@@ -57,7 +48,7 @@ def instruction(facebook_page_instance, target_row=None):
 
     business_info = facebook_page_instance.info or "No business information provided."
     additional_info = facebook_page_instance.additional_info or "No additional information provided."
-    inventory = cached_data['data']
+    inventory = get_cache(page_id, cache_type)['data']
 
     # Combine business info with the marketing message
     return (

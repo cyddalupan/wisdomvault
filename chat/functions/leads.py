@@ -1,15 +1,5 @@
 import json
-from googleapiclient.errors import HttpError
-from google.oauth2 import service_account
-from google.oauth2 import service_account
-import time
-
 from chat.utils import get_service
-
-import time
-
-# This global cache will hold user data with fb_id as keys
-cached_user_data = {}
 
 def instruction():
     return "\nIMPORTANT: If no relevant topic is being discussed, proactively ask the user for their information: Mobile, Gender, Area, Birthday. Trigger function save_user_info once the user provides the details."
@@ -82,8 +72,6 @@ def save_user_info(tool_calls, user_profile, facebook_page_instance):
                         insertDataOption='INSERT_ROWS',
                         body={"values": new_row}
                     ).execute()
-                    if fb_id in cached_user_data:
-                        del cached_user_data[fb_id]
                     
                     user_profile.is_leads_complete = True
                     user_profile.save()

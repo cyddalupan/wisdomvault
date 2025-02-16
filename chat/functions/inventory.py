@@ -1,22 +1,17 @@
 import json
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-from google.oauth2 import service_account
 import time
 
+from chat.cache import delete_cache, get_cache, update_cache
 from chat.utils import get_service, summarizer
 
-# Global variable to store the fetched data and its timestamp
-cached_data = {
-    'data': None,
-    'timestamp': 0
-}
+cache_type = "inventory_admin"
 
 def instruction(facebook_page_instance, target_row=None):
-    global cached_data  # Use the global variable
-
     # Check if the cached data is older than 20 seconds
     current_time = time.time()
+    page_id = facebook_page_instance.page_id
+    cached_data = get_cache(page_id, cache_type)
+    print("### cached_data ***", cached_data)
     if current_time - cached_data['timestamp'] > 20:
         print("Fetching new data from Google Sheets...")
         if facebook_page_instance and getattr(facebook_page_instance, 'sheet_id', None):
@@ -45,8 +40,8 @@ def instruction(facebook_page_instance, target_row=None):
                         inventory_message += row_info + "\n"
                 
                 # Cache the data and timestamp
-                cached_data['data'] = inventory_message
-                cached_data['timestamp'] = current_time
+                update_cache(page_id, cache_type, inventory_message)
+                cached_data = get_cache(page_id, inventory_message)
 
             except Exception as e:
                 return f"Error fetching inventory data: {e}"
@@ -176,34 +171,27 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
             item_name = arguments_dict.get('item_name')
             confirmation = arguments_dict.get('confirmation', False)
             if confirmation and row_number:
-                is_success = delete_row(facebook_page_instance.sheet_id, row_number)
+                is_success = delete_row(facebook_page_instance.sheet_id, row_number, facebook_page_instance.page_id)
                 if is_success:
                     summarizer(user_profile)
                     return f"🗑️{item_name} - Deleted"
         
         if function_name == "add_row":
-            is_success = add_row(facebook_page_instance.sheet_id, arguments_dict)
+            is_success = add_row(facebook_page_instance.sheet_id, arguments_dict, facebook_page_instance.page_id)
             name = arguments_dict.get('name')
             if is_success:
                 summarizer(user_profile)
                 return f"✅{name} - Added"
         
         if function_name == "edit_row":
-            is_success = edit_row(facebook_page_instance.sheet_id, arguments_dict)
+            is_success = edit_row(facebook_page_instance.sheet_id, arguments_dict, facebook_page_instance.page_id)
             name = arguments_dict.get('name')
             if is_success:
                 summarizer(user_profile)
                 return f"✏️{name} - Updated"
     return None
 
-def clear_cached_data():
-    global cached_data
-    cached_data = {
-        'data': None,
-        'timestamp': 0
-    }
-
-def delete_row(sheet_id, row_id):
+def delete_row(sheet_id, row_id, page_id):
     service = get_service()
 
     try:
@@ -241,14 +229,14 @@ def delete_row(sheet_id, row_id):
             body={"requests": [delete_row_request]}
         ).execute()
 
-        clear_cached_data()
+        delete_cache(page_id, cache_type)
         return True
 
     except Exception as e:
         print(f"Error deleting row: {e}")
         return False
 
-def add_row(sheet_id, arguments_dict):
+def add_row(sheet_id, arguments_dict, page_id):
     product_code = arguments_dict.get('product_code', "")
     name = arguments_dict.get('name', "")
     stocks = arguments_dict.get('stocks', 0)
@@ -273,14 +261,14 @@ def add_row(sheet_id, arguments_dict):
         ).execute()
 
         print("Row added successfully.")
-        clear_cached_data()
+        delete_cache(page_id, cache_type)
         return True
 
     except Exception as e:
         print(f"Error adding row: {e}")
         return False
 
-def edit_row(sheet_id, arguments_dict):
+def edit_row(sheet_id, arguments_dict, page_id):
     row_number = arguments_dict.get('row_number') 
     product_code = arguments_dict.get('product_code', None)
     name = arguments_dict.get('name', None)
@@ -333,7 +321,7 @@ def edit_row(sheet_id, arguments_dict):
         ).execute()
 
         print(f"Row {row_number} updated successfully.")
-        clear_cached_data()
+        delete_cache(page_id, cache_type)
         return True
 
     except Exception as e:

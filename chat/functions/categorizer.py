@@ -106,8 +106,8 @@ def getCategory(user_profile, chat_history, facebook_page):
             }
         }
     }]
-    print("CATEGORY MESSAGE:", messages)
-    print("CATEGORY TOOL", tools)
+    # print("CATEGORY MESSAGE:", messages)
+    # print("CATEGORY TOOL", tools)
     completion = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=messages,

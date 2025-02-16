@@ -7,12 +7,6 @@ from datetime import datetime
 
 from chat.utils import get_service, summarize_sales, summarizer
 
-# Global variable to store the fetched data and its timestamp
-cached_data = {
-    'data': None,
-    'timestamp': 0
-}
-
 def instruction(facebook_page_instance, target_row=None): 
     latest_schedules = latest_data(facebook_page_instance)  # Get the latest schedule data
 
@@ -38,8 +32,6 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
     return None
 
 def latest_data(facebook_page_instance):
-    global cached_available_data  # Use the global variable
-
     print("Fetching latest bookings from Google Sheets...")
     if facebook_page_instance and getattr(facebook_page_instance, 'sheet_id', None):
         sheet_id = facebook_page_instance.sheet_id

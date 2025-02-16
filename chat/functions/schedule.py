@@ -1,30 +1,20 @@
 import time
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 
+from chat.cache import get_cache, update_cache
 from chat.utils import get_service
 
 # Global variable for caching
-cached_data = {
-    'data': None,
-    'timestamp': 0
-}
-
-cached_available_data = {
-    'data': None,
-    'timestamp': 0
-}
-
-cached_booking_data = {
-    'data': {},
-    'timestamp': 0
-}
+cache_all = "schedule_all"
+cache_available = "schedule_available"
+cache_booking = "schedule_booking"
 
 def read_bookings(facebook_page_instance):
-    global cached_data  # Use the global variable
-
     # Check if the cached data is older than 20 seconds
     current_time = time.time()
+    page_id = facebook_page_instance.page_id
+    cached_data = get_cache(page_id, cache_all)
     if current_time - cached_data['timestamp'] > 20:
         print("Fetching new data from Google Sheets...")
         if facebook_page_instance and getattr(facebook_page_instance, 'sheet_id', None):
@@ -51,8 +41,8 @@ def read_bookings(facebook_page_instance):
                         bookings_message += row_info + "\n"
 
                 # Cache the data and timestamp
-                cached_data['data'] = bookings_message
-                cached_data['timestamp'] = current_time
+                update_cache(page_id, cache_all, bookings_message)
+                cached_data = get_cache(page_id, cache_all)
 
             except Exception as e:
                 return f"Error fetching bookings data: {e}"
@@ -60,11 +50,11 @@ def read_bookings(facebook_page_instance):
     return cached_data['data']
 
 def available_schedule(facebook_page_instance):
-    global cached_available_data  # Use the global variable
-
     # Check if the cached data is older than 20 seconds
     current_time = time.time()
-    if current_time - cached_available_data['timestamp'] > 20:
+    page_id = facebook_page_instance.page_id
+    cached_data = get_cache(page_id, cache_available)
+    if current_time - cached_data['timestamp'] > 20:
         print("Fetching available schedules from Google Sheets...")
         if facebook_page_instance and getattr(facebook_page_instance, 'sheet_id', None):
             sheet_id = facebook_page_instance.sheet_id
@@ -97,20 +87,20 @@ def available_schedule(facebook_page_instance):
                                 available_message += f"Row {i + 1}: {date_str}, {row[3]} (FB_ID: {row[4] if len(row) > 4 else 'N/A'})\n"
 
                 # Cache the data and timestamp
-                cached_available_data['data'] = available_message
-                cached_available_data['timestamp'] = current_time
+                update_cache(page_id, cache_available, available_message)
+                cached_data = get_cache(page_id, cache_available)
 
             except Exception as e:
                 return f"Error fetching available schedules: {e}"
 
-    return cached_available_data['data']
+    return cached_data['data']
 
 def get_booking_date(facebook_page_instance, fb_id):
-    global cached_booking_data  # Use the global cache
-
     # Check if the cached data is older than 30 seconds
     current_time = time.time()
-    if current_time - cached_booking_data['timestamp'] > 30:
+    page_id = facebook_page_instance.page_id
+    cached_data = get_cache(page_id, cache_booking)
+    if current_time - cached_data['timestamp'] > 30:
         print("Fetching bookings from Google Sheets...")
         if facebook_page_instance and getattr(facebook_page_instance, 'sheet_id', None):
             sheet_id = facebook_page_instance.sheet_id
@@ -142,15 +132,15 @@ def get_booking_date(facebook_page_instance, fb_id):
                                 bookings[fb_id_cell] = date_str
 
                 # Cache the bookings data and timestamp
-                cached_booking_data['data'] = bookings
-                cached_booking_data['timestamp'] = current_time
+                update_cache(page_id, cache_booking, bookings)
+                cached_data = get_cache(page_id, cache_booking)
 
             except Exception as e:
                 print(f"Error fetching bookings: {e}")
-                cached_booking_data['data'] = {}
+                cached_data['data'] = {}
 
     # Return the booking date if it exists
-    return cached_booking_data['data'].get(fb_id, None)
+    return cached_data['data'].get(fb_id, None)
 
 def save_booking(facebook_page_instance, row, fb_id, name, mobile, remarks=None):
     if facebook_page_instance and getattr(facebook_page_instance, 'sheet_id', None):
