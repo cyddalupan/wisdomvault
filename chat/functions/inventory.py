@@ -40,8 +40,7 @@ def instruction(facebook_page_instance, target_row=None):
                         inventory_message += row_info + "\n"
                 
                 # Cache the data and timestamp
-                update_cache(page_id, cache_type, inventory_message)
-                cached_data = get_cache(page_id, inventory_message)
+                cached_data = update_cache(page_id, cache_type, inventory_message)
 
             except Exception as e:
                 return f"Error fetching inventory data: {e}"
@@ -50,11 +49,11 @@ def instruction(facebook_page_instance, target_row=None):
         print("Using cached data...")
 
     return (
-        f"Manage users' inventory stored on Google Sheets:\n{cached_data['data']}\n\n"
+        "Manage users inventory. "
+        "IMPORTANT: Never ask user what row number an item is. if row number does not exist it means item does not exist. "
         "IMPORTANT: The Google Sheet is the sole source of truth regarding inventory data. "
         "Never add a product that already exists in the inventory. "
-        "If a product already exists, suggest editing the existing entry instead of adding a duplicate. "
-        "Always verify the product details to avoid duplicates."
+        f"Here are the items stored on Google Sheets:\n{cached_data['data']}\n\n "
     )
 
 def generate_tools():
@@ -124,13 +123,13 @@ def generate_tools():
         "type": "function",
         "function": {
             "name": "edit_row",
-            "description": "edit one row from SpreadSheet",
+            "description": "edit or update one row from SpreadSheet",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "row_number": {
                         "type": "integer",
-                        "description": "row of the product to delete",
+                        "description": "row number of the product to edit based on Google Sheet data.",
                     },
                     "product_code": {
                         "type": "string",
@@ -247,7 +246,7 @@ def add_row(sheet_id, arguments_dict, page_id):
     try:
         # Extract the new row data to be appended
         new_row = [
-            [product_code, name, stocks, price, description]
+            [name, product_code, stocks, price, description]
         ]
         
         # Use the values.append() method to append the new row at the end
@@ -270,8 +269,8 @@ def add_row(sheet_id, arguments_dict, page_id):
 
 def edit_row(sheet_id, arguments_dict, page_id):
     row_number = arguments_dict.get('row_number') 
-    product_code = arguments_dict.get('product_code', None)
     name = arguments_dict.get('name', None)
+    product_code = arguments_dict.get('product_code', None)
     stocks = arguments_dict.get('stocks', None)
     price = arguments_dict.get('price', None)
     description = arguments_dict.get('description', None)
@@ -298,8 +297,8 @@ def edit_row(sheet_id, arguments_dict, page_id):
 
         # Prepare the new row data to be updated
         updated_values = [
-            product_code if product_code is not None else current_row[0],
-            name if name is not None else current_row[1],
+            name if name is not None else current_row[0],
+            product_code if product_code is not None else current_row[1],
             stocks if stocks is not None else current_row[2],
             price if price is not None else current_row[3],
             description if description is not None else current_row[4]

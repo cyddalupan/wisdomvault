@@ -185,7 +185,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                 "content": (
                     f"Your name is KENSHI short for (Kiosk and Easy Navigation System for Handling Inventory). "
                     f"Speak in taglish, keep replies short, No markdown just emoji and proper spacing, and focus STRICTLY on the current topic: '{current_task}'. "
-                    f"be more casual, use 'po', 'opo', sir or maam"
+                    f"be more casual, use 'po', 'opo', sir or maam. "
                     f"Full Details of current topic: ({topic_instruction}) "
                     # List topic informations.
                     f"{topic_description(facebook_page_instance)}"
@@ -245,7 +245,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=messages,
-            temperature=0,
+            temperature=0.2,
             tools=tools
         )
         response_content = completion.choices[0].message.content

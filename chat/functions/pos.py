@@ -40,8 +40,7 @@ def instruction(facebook_page_instance, target_row=None):
                         inventory_message += row_info + "\n"
                 
                 # Cache the data and timestamp
-                update_cache(page_id, cache_type, inventory_message)
-                cached_data = get_cache(page_id, cache_type)
+                cached_data = update_cache(page_id, cache_type, inventory_message)
 
             except Exception as e:
                 return f"Error fetching inventory data: {e}"
@@ -123,13 +122,10 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
 
 def create_sale(sheet_id, arguments_dict, name):
     print("create_sale dict", arguments_dict)
-    # Example value of arguments_dict
-    # {'items': [{'row_number': 4, 'quantity': 2}, {'row_number': 5, 'quantity': 2}, {'row_number': 6, 'quantity': 10}], 'confirmation': True}
-
     # Initialize Google Sheets API service
     service = get_service()
 
-    # Prepare to track the total sale amount and generate the sale details
+    # Prepare to track the total sale amount
     total_sale = 0
     sales_data = []
     sale_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')  # Get current date and time for sale
@@ -140,7 +136,7 @@ def create_sale(sheet_id, arguments_dict, name):
         quantity = item.get('quantity')
 
         # Get product details from inventory
-        inventory_data = get_product_data_from_inventory(sheet_id, row_number)  # Helper function to get product details by row number
+        inventory_data = get_product_data_from_inventory(sheet_id, row_number)
 
         if inventory_data:
             product_name = inventory_data.get('name')
@@ -152,90 +148,110 @@ def create_sale(sheet_id, arguments_dict, name):
                 print(f"Not enough stock for {product_name}. Available: {stock}, Required: {quantity}")
                 return False  # If not enough stock, return an error
                 
-            total_amount = price * quantity
-            total_sale += total_amount
+            live_cost = price * quantity
+            total_sale += live_cost
 
-            # Prepare data for Sales sheet (one row per item)
-            sales_data.append([sale_time, product_name, quantity, total_amount])
+            # Prepare data for Sales sheet
+            sales_data.append([sale_time, product_name, quantity, live_cost, "Done"])
 
             # Deduct stock from the Inventory sheet
             new_stock = stock - quantity
             update_inventory_stock(sheet_id, row_number, new_stock)
 
+    # Helper function to retrieve next truly empty row in the specified column
+    def find_next_empty_row_in_column(sheet_id, sheet_name, column):
+        # Fetch all values in the specified column
+        result = service.spreadsheets().values().get(
+            spreadsheetId=sheet_id,
+            range=f"{sheet_name}!{column}:{column}"
+        ).execute()
+
+        values = result.get('values', [])
+        
+        # Iterate over each row to find a truly empty spot for input
+        for i, cell in enumerate(values):
+            # Check for rows that are effectively empty: no content or only whitespace in column A
+            if len(cell) == 0 or cell[0].strip() == "":
+                return i + 1
+
+        # If no empty cell found, return the next row after the last found row with content
+        return len(values) + 1
+
+    # Find next empty row in Sales and Transactions sheets
+    next_sales_row = find_next_empty_row_in_column(sheet_id, "Sales", "A")
+    next_transactions_row = find_next_empty_row_in_column(sheet_id, "Transactions", "A")
+
     # Step 1: Insert data into the 'Sales' sheet
     try:
-        response_sales = service.spreadsheets().values().append(
+        response_sales = service.spreadsheets().values().update(
             spreadsheetId=sheet_id,
-            range="Sales",  # The range where we want to append the data (automatically adds to the end)
+            range=f"Sales!A{next_sales_row}",
             valueInputOption="USER_ENTERED",
-            body={
-                "values": sales_data
-            }
+            body={"values": sales_data}
         ).execute()
         
-        print(f"Sale data added to 'Sales' sheet successfully.")
+        print("Sale data added to 'Sales' sheet successfully.")
     except Exception as e:
         print(f"Error adding sale data to 'Sales' sheet: {e}")
         return False
 
-    # Step 2: Insert summary data into the 'Sales Summary' sheet
+    # Step 2: Insert summary data into the 'Transactions' sheet
     try:
-        # Insert sale summary (one row per batch sale)
-        sale_summary_data = [[sale_time, total_sale, name]]
+        # Insert transaction summary
+        transaction_data = [[sale_time, total_sale]]
 
-        response_summary = service.spreadsheets().values().append(
+        response_summary = service.spreadsheets().values().update(
             spreadsheetId=sheet_id,
-            range="Sales Summary",  # Range for Sales Summary sheet
+            range=f"Transactions!A{next_transactions_row}",
             valueInputOption="USER_ENTERED",
-            body={
-                "values": sale_summary_data
-            }
+            body={"values": transaction_data}
         ).execute()
 
-        print(f"Sale summary added to 'Sales Summary' sheet successfully.")
+        print("Sale summary added to 'Transactions' sheet successfully.")
     except Exception as e:
-        print(f"Error adding sale summary to 'Sales Summary' sheet: {e}")
+        print(f"Error adding sale summary to 'Transactions' sheet: {e}")
         return False
 
     return True
-
 
 def get_product_data_from_inventory(sheet_id, row_number):
     service = get_service()
 
     # Get the specific row data from the Inventory sheet
-    range_ = f"Inventory!A{row_number}:E{row_number}"  # Adjust this range if needed
-    result = service.spreadsheets().values().get(
-        spreadsheetId=sheet_id,
-        range=range_
-    ).execute()
+    range_ = f"Inventory!A{row_number}:E{row_number}"
+    try:
+        result = service.spreadsheets().values().get(
+            spreadsheetId=sheet_id,
+            range=range_
+        ).execute()
+    except Exception as e:
+        print(f"Error retrieving data: {e}")
+        return None
 
     values = result.get('values', [])
-    print("###Values", values)
     
-    # Check if data exists for the row
     if values:
-        # If data is found, retrieve the current row or default to an empty string if a column is missing
-        current_row = values[0]  # This is a list with 5 expected columns: Product Code, Name, Stocks, Price, Description
-        
-        # Prepare the data, using current values if the new value is not provided
-        product_code = current_row[0] if len(current_row) > 0 else None
-        name = current_row[1] if len(current_row) > 1 else None
-        print("###Values", current_row[2])
+        current_row = values[0]
+        name = current_row[0] if len(current_row) > 0 else None
+        product_code = current_row[1] if len(current_row) > 1 else None
         stocks = int(current_row[2]) if len(current_row) > 2 and current_row[2] else 0
-        price = float(current_row[3]) if len(current_row) > 3 and current_row[3] else 0.0
+
+        price_str = current_row[3] if len(current_row) > 3 and current_row[3] else "0"
+        try:
+            price = float(''.join(filter(lambda x: x.isdigit() or x == '.', price_str)))
+        except ValueError:
+            price = 0.0
+
         description = current_row[4] if len(current_row) > 4 else None
 
-        # Return a dictionary with the complete data (using current values where necessary)
         return {
-            'product_code': product_code,
             'name': name,
+            'product_code': product_code,
             'stocks': stocks,
             'price': price,
             'description': description
         }
     else:
-        # If no data found, log and return None
         print(f"No data found for row {row_number}.")
         return None
 

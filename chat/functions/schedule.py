@@ -41,8 +41,7 @@ def read_bookings(facebook_page_instance):
                         bookings_message += row_info + "\n"
 
                 # Cache the data and timestamp
-                update_cache(page_id, cache_all, bookings_message)
-                cached_data = get_cache(page_id, cache_all)
+                cached_data = update_cache(page_id, cache_all, bookings_message)
 
             except Exception as e:
                 return f"Error fetching bookings data: {e}"
@@ -76,7 +75,7 @@ def available_schedule(facebook_page_instance):
                     available_message = "Available Dates from Bookings Data:\n"
                     current_date = datetime.now()
 
-                    for i, row in enumerate(values[6:], start=2):  # Assuming the first two rows are headers
+                    for i, row in enumerate(values[6:], start=2): 
                         # Check if the second column (date) exists and is not empty
                         date_str = row[2] if len(row) > 2 else None
                         name = row[5] if len(row) > 5 else None
@@ -87,8 +86,7 @@ def available_schedule(facebook_page_instance):
                                 available_message += f"Row {i + 1}: {date_str}, {row[3]} (FB_ID: {row[4] if len(row) > 4 else 'N/A'})\n"
 
                 # Cache the data and timestamp
-                update_cache(page_id, cache_available, available_message)
-                cached_data = get_cache(page_id, cache_available)
+                cached_data = update_cache(page_id, cache_available, available_message)
 
             except Exception as e:
                 return f"Error fetching available schedules: {e}"
@@ -132,8 +130,7 @@ def get_booking_date(facebook_page_instance, fb_id):
                                 bookings[fb_id_cell] = date_str
 
                 # Cache the bookings data and timestamp
-                update_cache(page_id, cache_booking, bookings)
-                cached_data = get_cache(page_id, cache_booking)
+                cached_data = update_cache(page_id, cache_booking, bookings)
 
             except Exception as e:
                 print(f"Error fetching bookings: {e}")

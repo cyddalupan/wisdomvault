@@ -4,7 +4,8 @@ import time
 cache_grouped_by_page_id = {}
 
 def update_cache(page_id, data_type, new_data):
-    """Update the cache for the given page_id and data type with new data and timestamp."""
+    """Update the cache for the given page_id and data type with new data and timestamp,
+    and return the updated cache entry."""
     # Set default if page_id does not exist
     if page_id not in cache_grouped_by_page_id:
         cache_grouped_by_page_id[page_id] = {}
@@ -15,6 +16,9 @@ def update_cache(page_id, data_type, new_data):
     # Update cache data and timestamp
     cache_grouped_by_page_id[page_id][data_type]['data'] = new_data
     cache_grouped_by_page_id[page_id][data_type]['timestamp'] = time.time()
+
+    # Return the updated cache entry
+    return cache_grouped_by_page_id[page_id][data_type]
 
 def get_cache(page_id, data_type):
     """Retrieve cached data for the given page_id and data type."""

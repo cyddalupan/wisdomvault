@@ -39,7 +39,7 @@ def instruction(facebook_page_instance, target_row=None):
                         inventory_message += row_info + "\n"
                 
                 # Cache the data and timestamp
-                update_cache(page_id, cache_type, inventory_message)
+                cached_data = update_cache(page_id, cache_type, inventory_message)
 
             except Exception as e:
                 return f"Error fetching inventory data: {e}"
