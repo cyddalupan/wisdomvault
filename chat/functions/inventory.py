@@ -52,7 +52,7 @@ def instruction(facebook_page_instance, target_row=None):
         "Manage users inventory. "
         "IMPORTANT: Never ask user what row number an item is. if row number does not exist it means item does not exist. "
         "IMPORTANT: The Google Sheet is the sole source of truth regarding inventory data. "
-        "Never add a product that already exists in the inventory. "
+        "if user wants to add a product that exist suggest editing the existing item instead. "
         f"Here are the items stored on Google Sheets:\n{cached_data['data']}\n\n "
     )
 

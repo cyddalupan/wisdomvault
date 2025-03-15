@@ -75,7 +75,9 @@ def available_schedule(facebook_page_instance):
                     available_message = "Available Dates from Bookings Data:\n"
                     current_date = datetime.now()
 
-                    for i, row in enumerate(values[6:], start=2): 
+                    # Start processing from the 7th row in the sheet.
+                    start_from_row = 7
+                    for i, row in enumerate(values[6:], start=start_from_row):
                         # Check if the second column (date) exists and is not empty
                         date_str = row[2] if len(row) > 2 else None
                         name = row[5] if len(row) > 5 else None
@@ -83,7 +85,7 @@ def available_schedule(facebook_page_instance):
                         if date_str and name is None:  # Only proceed if there's a date and no name
                             date = datetime.strptime(date_str, '%Y-%m-%d')
                             if date > current_date:
-                                available_message += f"Row {i + 1}: {date_str}, {row[3]} (FB_ID: {row[4] if len(row) > 4 else 'N/A'})\n"
+                                available_message += f"Row {i}: {date_str}, {row[3]} (FB_ID: {row[4] if len(row) > 4 else 'N/A'})\n"
 
                 # Cache the data and timestamp
                 cached_data = update_cache(page_id, cache_available, available_message)
@@ -119,7 +121,7 @@ def get_booking_date(facebook_page_instance, fb_id):
                 if values:
                     current_date = datetime.now()
 
-                    for row in values[2:]:  # Assuming the first two rows are headers
+                    for row in values[6:]:  # Assuming the first six rows are headers
                         # Check if the second column (date) and fifth column (fb_id) exist
                         date_str = row[2] if len(row) > 2 else None
                         fb_id_cell = row[4] if len(row) > 4 else None

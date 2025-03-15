@@ -9,6 +9,7 @@ from django.http import JsonResponse, HttpResponse
 from chat import utils
 from chat.functions import analyze, inventory, leads, other, pos, schedule, schedule_admin, customer, help, escalate
 from chat.functions.categorizer import get_possible_topics, getCategory, topic_description
+from chat.functions.cron_sheet_cleaner import process_sales
 from chat.functions.get_name import bypass_get_name
 from page.models import FacebookPage
 from .models import Chat, UserProfile
@@ -314,6 +315,13 @@ def my_cron_view(request):
             Chat.objects.create(user=user, message='', reply=response_text)
 
     return HttpResponse("Messages sent successfully!")
+
+def cron_sheet_cleaner(request):
+    all_pages = FacebookPage.objects.all()
+    for page in all_pages:
+        process_sales(page.sheet_id)
+
+    return HttpResponse("Sheets Updated!")
 
 def chat_test_page(request):
     return render(request, 'chat_test.html')

@@ -67,7 +67,7 @@ def save_user_info(tool_calls, user_profile, facebook_page_instance):
                     # specifying that the data should append starting from row 10
                     response = service.spreadsheets().values().append(
                         spreadsheetId=sheet_id,
-                        range="Leads!A10:G",  # Assuming these are the required columns
+                        range="Leads!A2:G",  # Assuming these are the required columns
                         valueInputOption="USER_ENTERED",
                         insertDataOption='INSERT_ROWS',
                         body={"values": new_row}
