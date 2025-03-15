@@ -160,3 +160,32 @@ def summarize_sales(facebook_page_instance):
         except Exception as e:
             sales_message = f"An error occurred: {str(e)}"
     return None
+
+def escalate_normal(legacy):
+    print("Legacy", legacy)
+
+    message = {
+        "role": "system",
+        "content": (
+            "You check if the last assistant reply is ok. just reply 'GOOD' or 'BAD' "
+            "If its ok just reply 'GOOD'"
+            "reply 'BAD' If you think reply is bad, an apology or should have been a function call"
+        ),
+    }
+    
+    if legacy is None:
+        legacy = []
+
+    if len(legacy) > 0:
+        legacy[0] = message
+    else:
+        # Optionally handle the case where legacy is empty
+        legacy.append(message)
+
+    # Escalate normal chat
+    completion = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=legacy,
+        temperature=0.1,
+    )
+    return completion.choices[0].message.content

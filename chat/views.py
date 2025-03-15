@@ -13,7 +13,7 @@ from chat.functions.cron_sheet_cleaner import process_sales
 from chat.functions.get_name import bypass_get_name
 from page.models import FacebookPage
 from .models import Chat, UserProfile
-from chat.utils import getChatHistory, send_image, send_message
+from chat.utils import getChatHistory, send_image, send_message, escalate_normal
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
 from dotenv import load_dotenv
@@ -246,7 +246,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=messages,
-            temperature=0.2,
+            temperature=1,
             tools=tools
         )
         response_content = completion.choices[0].message.content
@@ -270,6 +270,16 @@ def ai_process(user_profile, facebook_page_instance, first_run):
             if not first_run:
                 # Send an apology if retries fail
                 response_content = "I am sorry it seems like I am getting confused. Can we try again?"
+        else:
+            escalate_result = escalate_normal(messages.append({
+                "role": "assistant",
+                "content": response_content
+            }))
+            print("escalate_result", escalate_result)
+            #if escalate_result === "BAD":
+                # handle re AI here. add instruction that the last reply was bad
+            
+
 
     except requests.exceptions.Timeout:
         # Handle timeout errors specifically
