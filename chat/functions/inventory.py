@@ -2,7 +2,8 @@ import json
 import time
 
 from chat.cache import delete_cache, get_cache, update_cache
-from chat.utils import get_service, summarizer
+from chat.service import get_service
+from chat.utils import summarizer
 
 cache_type = "inventory_admin"
 
@@ -52,7 +53,6 @@ def instruction(facebook_page_instance, target_row=None):
         "Manage users inventory. "
         "IMPORTANT: Never ask user what row number an item is. if row number does not exist it means item does not exist. "
         "IMPORTANT: The Google Sheet is the sole source of truth regarding inventory data. "
-        "if user wants to add a product that exist suggest editing the existing item instead. "
         f"Here are the items stored on Google Sheets:\n{cached_data['data']}\n\n "
     )
 
@@ -89,7 +89,7 @@ def generate_tools():
         "type": "function",
         "function": {
             "name": "add_row",
-            "description": "add one row from SpreadSheet, make sure product name does not exist yet",
+            "description": "add one row, unique data from SpreadSheet",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -114,7 +114,7 @@ def generate_tools():
                         "description": "product description - optional",
                     },
                 },
-                "required": ["name"],
+                "required": ["name", "stocks", "price"],
             },
         }
     })
@@ -184,10 +184,9 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
         
         if function_name == "edit_row":
             is_success = edit_row(facebook_page_instance.sheet_id, arguments_dict, facebook_page_instance.page_id)
-            name = arguments_dict.get('name')
             if is_success:
                 summarizer(user_profile)
-                return f"✏️{name} - Updated"
+                return f"✏️Product Updated"
     return None
 
 def delete_row(sheet_id, row_id, page_id):
@@ -277,7 +276,6 @@ def edit_row(sheet_id, arguments_dict, page_id):
     
     # Ensure row_number is provided and is a valid integer
     if row_number is None:
-        print("Error: row_number is required.")
         return False
 
     service = get_service()
@@ -293,36 +291,37 @@ def edit_row(sheet_id, arguments_dict, page_id):
         ).execute()
 
         # Retrieve the current row, or default to an empty list if not found
-        current_row = result.get('values', [[]])[0]  # Get the current row, or empty list if not found
+        current_row = result.get('values', [[]])[0]
+
+        # Clean and validate stocks and price
+        def clean_number(value):
+            try:
+                return float(value)
+            except (ValueError, TypeError):
+                return None
+
+        stocks = clean_number(stocks if stocks is not None else current_row[2] if len(current_row) > 2 else None)
+        price = clean_number(price if price is not None else current_row[3] if len(current_row) > 3 else None)
 
         # Prepare the new row data to be updated
         updated_values = [
-            name if name is not None else current_row[0],
-            product_code if product_code is not None else current_row[1],
-            stocks if stocks is not None else current_row[2],
-            price if price is not None else current_row[3],
-            description if description is not None else current_row[4]
+            name if name is not None else current_row[0] if len(current_row) > 0 else None,
+            product_code if product_code is not None else current_row[1] if len(current_row) > 1 else None,
+            stocks,
+            price,
+            description if description is not None else current_row[4] if len(current_row) > 4 else None
         ]
 
-        # Prepare the request body for the update
-        update_request = {
-            "range": f"Inventory!A{row_index + 1}:E{row_index + 1}",  # The range to update (adjusts based on row number)
-            "valueInputOption": "USER_ENTERED",  # Allow for user-entered values and formatting
-            "values": [updated_values]  # The updated values for that row
-        }
-
         # Update the row in the spreadsheet
-        response = service.spreadsheets().values().update(
+        service.spreadsheets().values().update(
             spreadsheetId=sheet_id,
             range=f"Inventory!A{row_index + 1}:E{row_index + 1}",
             valueInputOption="USER_ENTERED",
             body={"values": [updated_values]}
         ).execute()
 
-        print(f"Row {row_number} updated successfully.")
         delete_cache(page_id, cache_type)
         return True
 
     except Exception as e:
-        print(f"Error editing row: {e}")
         return False

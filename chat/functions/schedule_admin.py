@@ -5,7 +5,8 @@ from google.oauth2 import service_account
 import time
 from datetime import datetime
 
-from chat.utils import get_service, summarize_sales, summarizer
+from chat.service import get_service
+from chat.utils import summarize_sales, summarizer
 
 def instruction(facebook_page_instance, target_row=None): 
     latest_schedules = latest_data(facebook_page_instance)  # Get the latest schedule data

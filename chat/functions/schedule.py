@@ -3,7 +3,7 @@ import json
 from datetime import datetime
 
 from chat.cache import get_cache, update_cache
-from chat.utils import get_service
+from chat.service import get_service
 
 # Global variable for caching
 cache_all = "schedule_all"

@@ -1,15 +1,13 @@
 import requests
 from openai import OpenAI
 from dotenv import load_dotenv
-from googleapiclient.discovery import build
-from google.oauth2 import service_account
 
 from chat.models import Chat
+from chat.service import get_service
 
 load_dotenv()
 
 client = OpenAI()
-
 
 def getChatHistory(user_profile):
     # Retrieve the last 6 chat history for this user
@@ -19,11 +17,6 @@ def getChatHistory(user_profile):
         # Trigger the summarizer function if there are more than 6 chats
         summarizer(user_profile)
     return chat_history
-
-def get_service():
-    SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-    creds = service_account.Credentials.from_service_account_file("service_account.json", scopes=SCOPES)
-    return build("sheets", "v4", credentials=creds)
 
 def send_message(recipient_id, message_text, facebook_page_instance):
     if facebook_page_instance.token == "antoken":
@@ -162,8 +155,7 @@ def summarize_sales(facebook_page_instance):
     return None
 
 def escalate_normal(legacy):
-    print("Legacy", legacy)
-
+    tmp_legacy = legacy.copy()
     message = {
         "role": "system",
         "content": (
@@ -173,19 +165,70 @@ def escalate_normal(legacy):
         ),
     }
     
-    if legacy is None:
-        legacy = []
+    if tmp_legacy is None:
+        tmp_legacy = []
 
-    if len(legacy) > 0:
-        legacy[0] = message
-    else:
-        # Optionally handle the case where legacy is empty
-        legacy.append(message)
+    # Insert the new message at the start of the legacy list
+    tmp_legacy.insert(0, message)
+
+    print("### ESCALATE MODIFIED LEGACY:", tmp_legacy)
+    # Escalate normal chat
+    completion = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=tmp_legacy,
+        temperature=0.1,
+    )
+    return completion.choices[0].message.content
+
+def escalate_bad(legacy, tools):
+    tmp_legacy = legacy.copy()
+
+    message = {
+        "role": "system",
+        "content": (
+            "You give a better response or maybe a function call should have been triggered because the system give a bad response. "
+            "the bad response is the last system message and you should change that to a better one. "
+        ),
+    }
+    
+    if tmp_legacy is None:
+        tmp_legacy = []
+
+    # Insert the new message at the start of the legacy list
+    tmp_legacy.insert(0, message)
+    
+    print("### BOSS MESSAGE:", tmp_legacy)
+
+    # Escalate normal chat
+    completion = client.chat.completions.create(
+        model="gpt-4o",
+        messages=tmp_legacy,
+        temperature=0,
+        tools=tools
+    )
+    return completion
+
+def escalate_function(legacy, tools):
+    tmp_legacy = legacy.copy()
 
     # Escalate normal chat
     completion = client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=legacy,
-        temperature=0.1,
+        messages=tmp_legacy,
+        temperature=0.2,
+        tools=tools
     )
-    return completion.choices[0].message.content
+    return completion
+
+def escalate_master(legacy, tools):
+    tmp_legacy = legacy.copy()
+
+    # Escalate normal chat
+    completion = client.chat.completions.create(
+        model="gpt-4o",
+        messages=tmp_legacy,
+        temperature=0,
+        tools=tools
+    )
+    print("### escalate master result", completion)
+    return completion

@@ -3,7 +3,8 @@ import time
 import datetime
 
 from chat.cache import get_cache, update_cache
-from chat.utils import get_service, summarizer
+from chat.service import get_service
+from chat.utils import summarizer
 
 
 cache_type = "pos"

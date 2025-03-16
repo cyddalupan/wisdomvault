@@ -3,7 +3,8 @@ import time
 
 from chat.cache import get_cache, update_cache
 from chat.functions.pos import create_sale
-from chat.utils import get_service, summarizer
+from chat.service import get_service
+from chat.utils import summarizer
 
 def instruction(facebook_page_instance, target_row=None):
     # Check if the cached data is older than 20 seconds

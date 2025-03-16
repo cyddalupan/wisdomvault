@@ -1,5 +1,6 @@
 import re
-from chat.utils import get_service
+
+from chat.service import get_service
 
 def process_sales(sheet_id):
     service = get_service()  # Assumes get_service() initializes the Google Sheets API client.

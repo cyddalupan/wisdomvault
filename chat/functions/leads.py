@@ -1,5 +1,6 @@
 import json
-from chat.utils import get_service
+
+from chat.service import get_service
 
 def instruction():
     return "\nIMPORTANT: If no relevant topic is being discussed, proactively ask the user for their information: Mobile, Gender, Area, Birthday. Trigger function save_user_info once the user provides the details."
@@ -27,7 +28,7 @@ def generate_tools():
                     },
                     "birthday": {
                         "type": "string",
-                        "description": "users birthdate with year",
+                        "description": "users birthdate, require year",
                     },
                 },
                 "required": ["mobile", "gender", "area", "birthday"],

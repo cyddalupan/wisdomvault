@@ -11,9 +11,10 @@ from chat.functions import analyze, inventory, leads, other, pos, schedule, sche
 from chat.functions.categorizer import get_possible_topics, getCategory, topic_description
 from chat.functions.cron_sheet_cleaner import process_sales
 from chat.functions.get_name import bypass_get_name
+from chat.toolcall import trigger_tool_calls
 from page.models import FacebookPage
 from .models import Chat, UserProfile
-from chat.utils import getChatHistory, send_image, send_message, escalate_normal
+from chat.utils import escalate_function, escalate_master, getChatHistory, send_image, send_message, escalate_normal, escalate_bad
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
 from dotenv import load_dotenv
@@ -255,31 +256,48 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         tool_calls = completion.choices[0].message.tool_calls
         print("###tool_calls", tool_calls)
         if tool_calls:
-            if first_run and any(tool_call.function.name == "ask_manager_help" for tool_call in tool_calls):
-                response_content = help.tool_function(tool_calls, user_profile)
-            elif first_run and any(tool_call.function.name == "save_user_info" for tool_call in tool_calls):
-                response_content = leads.save_user_info(tool_calls, user_profile, facebook_page_instance)
-            elif first_run and any(tool_call.function.name == "book_schedule" for tool_call in tool_calls):
-                response_content = schedule.book_schedule(tool_calls, user_profile, facebook_page_instance)
-            elif tool_function:
-                response_content = tool_function(tool_calls, user_profile, facebook_page_instance)
+            print("###ORIGINAL TOOL", tool_calls)
+            completion2 = escalate_function(messages, tools)
+            tool_calls2 = completion2.choices[0].message.tool_calls
+            
+            print("### SECOND TOOL", tool_calls2)
+            try:
+                if tool_calls[0].function != tool_calls2[0].function:            
+                    print("### MASTER COMPARE 1", tool_calls[0].function)        
+                    print("### MASTER COMPARE 1", tool_calls2[0].function)
+                    completion = escalate_master(messages, tools)
+                    response_content = completion.choices[0].message.content
+                    # Handle tool calls if present
+                    tool_calls = completion.choices[0].message.tool_calls
+            except (IndexError, AttributeError):
+                # Handle the case where the list is empty or the attribute is missing
+                pass
+            if tool_calls:
+                response_content = trigger_tool_calls(first_run, tool_calls, user_profile, facebook_page_instance, tool_function)
+        else:
+            print("### NO TOOLS RESPONSE:", response_content)
+            messages.append({
+                "role": "assistant",
+                "content": response_content
+            })
+            escalate_result = escalate_normal(messages)
+            print("escalate_result", escalate_result)
+            if escalate_result == "BAD":
+                completion = escalate_bad(messages, tools)
+                response_content = completion.choices[0].message.content
 
+                # Handle tool calls if present
+                tool_calls = completion.choices[0].message.tool_calls
+                print("###Bad tool_calls", tool_calls)
+                if tool_calls:
+                    response_content = trigger_tool_calls(first_run, tool_calls, user_profile, facebook_page_instance, tool_function)
+                print("### BAD FINAL RESPONSE:", response_content)
             if not response_content and first_run:
                 # Retry the process if tool function fails during the first run
                 response_content = ai_process(user_profile, facebook_page_instance, False)
             if not first_run:
                 # Send an apology if retries fail
                 response_content = "I am sorry it seems like I am getting confused. Can we try again?"
-        else:
-            escalate_result = escalate_normal(messages.append({
-                "role": "assistant",
-                "content": response_content
-            }))
-            print("escalate_result", escalate_result)
-            #if escalate_result === "BAD":
-                # handle re AI here. add instruction that the last reply was bad
-            
-
 
     except requests.exceptions.Timeout:
         # Handle timeout errors specifically
