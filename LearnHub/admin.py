@@ -3,7 +3,7 @@ import logging
 from django.contrib import admin
 from django.urls import path
 from django.shortcuts import render
-from .models import Angular, DigitalMarketing, Python, SoftwareQa
+from .models import Angular, DigitalMarketing, Python, SoftwareQa, Lawyer
 from .forms import LearnHubForm
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -219,6 +219,16 @@ class AngularAdmin(admin.ModelAdmin):
         return learn_hub(self, request, course)
 # Register the model and admin class
 admin.site.register(Angular, AngularAdmin)
+
+# Lawyer
+class LawyerAdmin(admin.ModelAdmin):
+    change_list_template = "admin/lawyer.html"
+    def changelist_view(self, request, extra_context=None):
+        course_name = "Lawyer"
+        course = Course.objects.filter(name=course_name).first()
+        return learn_hub(self, request, course)
+# Register the model and admin class
+admin.site.register(Lawyer, LawyerAdmin)
 
 
 
