@@ -252,5 +252,6 @@ JAZZMIN_SETTINGS = {
         "LearnHub.Python": "fas fa-terminal",
         "LearnHub.SoftwareQa": "fas fa-vial",
         "LearnHub.Angular": "fas fa-cubes",
+        "LearnHub.Lawyer": "fas fa-gavel",
     }
 }
