@@ -265,7 +265,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                 if tool_calls[0].function != tool_calls2[0].function:            
                     print("### MASTER COMPARE 1", tool_calls[0].function)        
                     print("### MASTER COMPARE 1", tool_calls2[0].function)
-                    completion = escalate_master(messages, tools)
+                    completion = escalate_master(messages, tools, tool_calls[0].function, tool_calls2[0].function)
                     response_content = completion.choices[0].message.content
                     # Handle tool calls if present
                     tool_calls = completion.choices[0].message.tool_calls

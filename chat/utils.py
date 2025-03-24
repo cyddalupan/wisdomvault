@@ -188,6 +188,7 @@ def escalate_bad(legacy, tools):
         "content": (
             "You give a better response or maybe a function call should have been triggered because the system give a bad response. "
             "the bad response is the last system message and you should change that to a better one. "
+            "consider everything before giving a better response make sure its correct."
         ),
     }
     
@@ -201,7 +202,7 @@ def escalate_bad(legacy, tools):
 
     # Escalate normal chat
     completion = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-4o-mini",
         messages=tmp_legacy,
         temperature=0,
         tools=tools
@@ -220,15 +221,33 @@ def escalate_function(legacy, tools):
     )
     return completion
 
-def escalate_master(legacy, tools):
+def escalate_master(legacy, tools, call1, call2):
     tmp_legacy = legacy.copy()
+
+    message = {
+    "role": "system",
+        "content": (
+            "You will provide the correct function tool call based on two sets of parameters from GPT. "
+            f"GPT1 suggests: {call1} and GPT2 suggests: {call2}. "
+            "Please carefully evaluate both suggestions and determine the appropriate parameters to use. "
+            "The following messages are the instructions that GPT1 and GPT2 received, so decide wisely."
+        ),
+    }
+    
+    if tmp_legacy is None:
+        tmp_legacy = []
+
+    # Insert the new message at the start of the legacy list
+    tmp_legacy.insert(0, message)
 
     # Escalate normal chat
     completion = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-4o-mini",
         messages=tmp_legacy,
         temperature=0,
         tools=tools
     )
     print("### escalate master result", completion)
     return completion
+
+
