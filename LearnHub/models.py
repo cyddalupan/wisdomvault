@@ -52,6 +52,38 @@ class SoftwareQa(models.Model):
 
     def __str__(self):
         return f"LearnHub {self.id}"
+    
+class Htmlcss(models.Model):
+    user_input = models.TextField()
+    ai_response = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def formatted_output(self):
+        markdown = mistune.create_markdown(renderer=mistune.HTMLRenderer())
+        html = markdown(self.ai_response)
+        return mark_safe(html)
+    
+    class Meta:
+        ordering = ['-id']
+
+    def __str__(self):
+        return f"LearnHub {self.id}"
+
+class Phplang(models.Model):
+    user_input = models.TextField()
+    ai_response = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def formatted_output(self):
+        markdown = mistune.create_markdown(renderer=mistune.HTMLRenderer())
+        html = markdown(self.ai_response)
+        return mark_safe(html)
+    
+    class Meta:
+        ordering = ['-id']
+
+    def __str__(self):
+        return f"LearnHub {self.id}"
 
 
 class Angular(models.Model):
@@ -118,7 +150,9 @@ class LessonProgress(models.Model):
         unique_together = ('user', 'lesson')
 
     def __str__(self):
-        return f"Lesson Progress: {self.user.username} - {self.lesson.name} ({'Completed' if self.completed else 'In Progress'})"
+        lesson_name = self.lesson.name if self.lesson else "No Lesson"
+        return f"Lesson Progress: {self.user.username} - {lesson_name} ({'Completed' if self.completed else 'In Progress'})"
+        
 
 
 class ChatHistory(models.Model):

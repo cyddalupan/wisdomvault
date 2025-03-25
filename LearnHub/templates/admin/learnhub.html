@@ -3,6 +3,12 @@
 {% load crispy_forms_tags %}
 
 {% block content %}
+<style>
+  img {
+    width: 90%;
+    padding: 5%;
+  }
+</style>
 <div class="container">
   <div>
     <strong>Overall Progress:</strong>
@@ -31,6 +37,11 @@
   <div class="w-100 mb-3 p-3 border rounded bg-light">
     <h2 class="border-bottom pb-2 border-success">KENSHI</h2>
     <p>{{ ai_response }}</p>
+  </div>
+  {% else %}
+  <div class="w-100 mb-3 p-3 border rounded bg-light">
+    <h2 class="border-bottom pb-2 border-success">KENSHI</h2>
+    <p>Ready ka na Mag simula o magpatuloy sa lesson natin?</p>
   </div>
   {% endif %}
 

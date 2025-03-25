@@ -3,7 +3,7 @@ import logging
 from django.contrib import admin
 from django.urls import path
 from django.shortcuts import render
-from .models import Angular, DigitalMarketing, Python, SoftwareQa, Lawyer
+from .models import Angular, DigitalMarketing, Htmlcss, Phplang, Python, SoftwareQa, Lawyer
 from .forms import LearnHubForm
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -27,11 +27,12 @@ def learn_hub(self, request, course):
     lessons = Lesson.objects.filter(course=course).order_by('order')
     total_lessons = lessons.count()
     user_progress = LessonProgress.objects.filter(user=user_profile, course=course).first()
+    print("course", course)
+    if user_progress is None:
+        print("No LessonProgress found for this user and course.")
+    print("total_lessons", total_lessons)
     
-    if user_progress:
-        current_lesson_order = user_progress.lesson.order
-    else:
-        current_lesson_order = 0 
+    current_lesson_order = user_progress.lesson.order if user_progress and user_progress.lesson and hasattr(user_progress.lesson, 'order') else 0
     if total_lessons > 0:
         overall_score = (current_lesson_order / total_lessons) * 95
 
@@ -145,17 +146,19 @@ def perform_learn_hub(self, text, user_profile, course):
                 "You are an API that always returns a JSON object. "
                 "The format must strictly adhere to: "
                 '{"message": "string (can include markdown)", "topic_score": integer (1-100)}. '
-                f"You are a teacher instructing the user about {course}, focusing on the topic: {lesson.name}. "
-                "Use taglish but depends on the user"
-                "You quizzes every 3 conversation to assess the user's understanding."
-                "Your scoring for topic_score must be strict and ensure there is no cheating."
-                "topic_score sould starts at 1 and move up as the user improves"
-                f"before you give 100 points on topic_score you make sure that the user is expert on the topic: {lesson.name}"
-                "Output only the JSON object without any additional text."
+                f"You are a teacher instructing the user about the course: {course}, focusing only on the topic: {lesson.name}. "
+                "Use taglish but depends on the user. "
+                "You quizzes every 3 conversation to assess the user's understanding. "
+                "Your scoring for topic_score must be strict and ensure there is no cheating. "
+                "topic_score should starts at 1 and move up as the user improves. "
+                f"before you give 100 points on topic_score you make sure that the user is expert on the topic: {lesson.name}. "
+                "focus more on guiding the discussion than just asking questions. "
+                "Output only the JSON object without any additional text. "
+                + (f"Additional topic information: {lesson.description}. " if lesson.description else "")
             )
         },
     ]
-    
+    print("messages", messages)
     # Include previous chat history in the conversation
     for chat in chat_history:
         messages.append({"role": "user", "content": chat.message})
@@ -210,6 +213,24 @@ class SoftwareQaAdmin(admin.ModelAdmin):
 admin.site.register(SoftwareQa, SoftwareQaAdmin)
 
 
+class HtmlcssAdmin(admin.ModelAdmin):
+    change_list_template = "admin/learnhub.html"
+    def changelist_view(self, request, extra_context=None):
+        course_name = "HTML and CSS"
+        course = Course.objects.filter(name=course_name).first()
+        return learn_hub(self, request, course)
+# Register the model and admin class
+admin.site.register(Htmlcss, HtmlcssAdmin)
+
+class PhplangAdmin(admin.ModelAdmin):
+    change_list_template = "admin/learnhub.html"
+    def changelist_view(self, request, extra_context=None):
+        course_name = "PHP Programming"
+        course = Course.objects.filter(name=course_name).first()
+        return learn_hub(self, request, course)
+# Register the model and admin class
+admin.site.register(Phplang, PhplangAdmin)
+
 # Angular
 class AngularAdmin(admin.ModelAdmin):
     change_list_template = "admin/learnhub.html"
@@ -222,7 +243,7 @@ admin.site.register(Angular, AngularAdmin)
 
 # Lawyer
 class LawyerAdmin(admin.ModelAdmin):
-    change_list_template = "admin/lawyer.html"
+    change_list_template = "admin/learnhub.html"
     def changelist_view(self, request, extra_context=None):
         course_name = "Lawyer"
         course = Course.objects.filter(name=course_name).first()
