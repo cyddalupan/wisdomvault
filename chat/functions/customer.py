@@ -6,6 +6,39 @@ from chat.functions.pos import create_sale
 from chat.service import get_service
 from chat.utils import summarizer
 
+
+def get_business_info(facebook_page_instance):
+    cache_type = "business_info"
+    page_id = facebook_page_instance.page_id
+    cached_data = get_cache(page_id, cache_type)
+    
+    # Check if the cached data is older than 20 seconds
+    if time.time() - cached_data['timestamp'] > 20:
+        if facebook_page_instance and getattr(facebook_page_instance, 'sheet_id', None):
+            sheet_id = facebook_page_instance.sheet_id
+            
+            try:
+                service = get_service()
+                result = service.spreadsheets().values().get(
+                    spreadsheetId=sheet_id,
+                    range="Settings!B2:B3"
+                ).execute()
+                
+                values = result.get('values', [])
+                info = values[0][0] if len(values) > 0 and len(values[0]) > 0 else "No business information provided."
+                additional_info = values[1][0] if len(values) > 1 and len(values[1]) > 0 else "No additional information provided."
+                
+                # Optionally cache the new values if necessary
+                update_cache(page_id, cache_type, {'info': info, 'additional_info': additional_info})
+
+            except Exception as e:
+                return "Error fetching settings data: {}".format(e)
+    else:
+        info = cached_data['data'].get('info', "No business information provided.")
+        additional_info = cached_data['data'].get('additional_info', "No additional information provided.")
+    
+    return info, additional_info
+
 def instruction(facebook_page_instance, target_row=None):
     # Check if the cached data is older than 20 seconds
     current_time = time.time()
@@ -47,8 +80,10 @@ def instruction(facebook_page_instance, target_row=None):
     else:
         print("Using cached data...")
 
-    business_info = facebook_page_instance.info or "No business information provided."
-    additional_info = facebook_page_instance.additional_info or "No additional information provided."
+    
+    info, additional_info = get_business_info(facebook_page_instance)
+    business_info = info or "No business information provided."
+    additional_info = additional_info or "No additional information provided."
     inventory = get_cache(page_id, cache_type)['data']
 
     # Combine business info with the marketing message

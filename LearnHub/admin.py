@@ -29,10 +29,6 @@ def learn_hub(self, request, course):
     lessons = Lesson.objects.filter(course=course).order_by('order')
     total_lessons = lessons.count()
     user_progress = LessonProgress.objects.filter(user=user_profile, course=course).first()
-    print("course", course)
-    if user_progress is None:
-        print("No LessonProgress found for this user and course.")
-    print("total_lessons", total_lessons)
     
     current_lesson_order = user_progress.lesson.order if user_progress and user_progress.lesson and hasattr(user_progress.lesson, 'order') else 0
     if total_lessons > 0:
@@ -77,7 +73,6 @@ def learn_hub(self, request, course):
 
         # Parse the JSON response string
         response_data = parse_response(response_json)
-        print(response_data)
 
         # Extract json
         message = response_data.get('message', '')
@@ -112,8 +107,7 @@ def learn_hub(self, request, course):
                 last_chat = ChatHistory.objects.filter(user=user_profile, lesson=user_progress.lesson).order_by('-timestamp').first()
                 if last_chat:
                     # Using the same parsing logic for last_chat.reply
-                    response_data = parse_response(last_chat.reply)        
-                    print(response_data)
+                    response_data = parse_response(last_chat.reply)
 
                     # Extract and store values
                     message = response_data.get('message', '')
@@ -183,7 +177,7 @@ def perform_learn_hub(self, text, user_profile, course):
             )
         },
     ]
-    print("messages", messages)
+
     # Include previous chat history in the conversation
     for chat in chat_history:
         messages.append({"role": "user", "content": chat.message})

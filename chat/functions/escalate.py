@@ -1,5 +1,8 @@
 import json
+from chat.cache import delete_cache
+from chat.functions.customer import get_business_info
 from chat.models import Help, UserProfile, Chat
+from chat.service import get_service
 from chat.utils import send_message, summarizer
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -81,6 +84,23 @@ def generate_tools():
 
     return tools
 
+def save_additional_info(facebook_page_instance, additional_info):
+    cache_type = "business_info"
+    service = get_service()
+    
+    try:
+        # Update the value in cell B3 of the "Settings" sheet
+        service.spreadsheets().values().update(
+            spreadsheetId=facebook_page_instance.sheet_id,
+            range="Settings!B3",
+            valueInputOption="USER_ENTERED",
+            body={"values": [[additional_info]]}
+        ).execute()
+        delete_cache(facebook_page_instance.page_id, cache_type)
+        return True
+    except Exception as e:
+        return False
+
 def tool_function(tool_calls, user_profile, facebook_page_instance):
     for tool_call in tool_calls:
         function_name = tool_call.function.name
@@ -115,7 +135,8 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
                 send_message(latest_help.fb_id, answer_to_customer, facebook_page_instance)
 
                 # Update additional info
-                additional_info = facebook_page_instance.additional_info
+                info, additional_info = get_business_info(facebook_page_instance)
+                additional_info = additional_info
                 last_question = latest_help.question
                 last_answer = answer
 
@@ -148,7 +169,7 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
                         messages=messages,
                         temperature=0,
                     )
-                    facebook_page_instance.additional_info = completion.choices[0].message.content
+                    save_additional_info(facebook_page_instance, completion.choices[0].message.content)
                     facebook_page_instance.save()
                 except Exception as e:
                     print(f"Error: {e}")
