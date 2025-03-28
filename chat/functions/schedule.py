@@ -353,7 +353,7 @@ def book_schedule(tool_calls, user_profile, facebook_page_instance):
         arguments_dict = json.loads(arguments)
         fb_id = user_profile.facebook_id
         name = user_profile.name
-        row_number = arguments_dict.get('row_number', 0)
+        row_number = arguments_dict.get('row_number', 0) - 1;
         mobile = arguments_dict.get('mobile', '')
         remarks = arguments_dict.get('remarks', '')
         confirmation = arguments_dict.get('confirmation', False)
