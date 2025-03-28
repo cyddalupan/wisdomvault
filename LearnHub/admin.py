@@ -38,7 +38,7 @@ def learn_hub(self, request, course):
 
     learn_hub_instance = form.save(commit=False)
 
-        # Function to safely parse response string
+    # Function to safely parse response string
     def parse_response(raw_response):
         try:
             return json.loads(raw_response)
