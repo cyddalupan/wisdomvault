@@ -1,5 +1,7 @@
 import json
 import logging
+import ast
+import re
 from django.contrib import admin
 from django.urls import path
 from django.shortcuts import render
@@ -38,12 +40,34 @@ def learn_hub(self, request, course):
 
     learn_hub_instance = form.save(commit=False)
 
-    # Function to safely parse response string
     def parse_response(raw_response):
+        """Function to extract message and topic_score from any response string."""
         try:
-            return json.loads(raw_response)
-        except (json.JSONDecodeError, TypeError):
-            return {'message': 'Invalid format', 'topic_score': 0}
+            # Strip the response of leading/trailing whitespace
+            raw_response = raw_response.strip()
+
+            # Initialize default values
+            message = 'No message found'
+            topic_score = 0
+
+            # Use regex to extract the message based on fixed delimiters
+            message_match = re.search(r'{"message": "(.*?)", "topic_score":', raw_response, re.DOTALL)
+            if message_match:
+                message = message_match.group(1)  # Extract the message
+
+                # Replace escaped newline and quote characters for readability
+                message = message.replace('\\n', '\n').replace('\\"', '"')
+
+            # Try to find the topic score by matching the format
+            topic_score_match = re.search(r'"topic_score":\s*(\d+)', raw_response)
+            if topic_score_match:
+                topic_score = int(topic_score_match.group(1))  # Extract the topic score
+
+            return {'message': message, 'topic_score': topic_score}
+
+        except Exception as e:
+            print(f"An error occurred while parsing: {e}")
+            return {'message': 'Parsing error', 'topic_score': 0}
 
     if request.method == 'POST' and form.is_valid():
         # Call the AI function with user input and course details
@@ -53,6 +77,7 @@ def learn_hub(self, request, course):
 
         # Parse the JSON response string
         response_data = parse_response(response_json)
+        print(response_data)
 
         # Extract json
         message = response_data.get('message', '')
@@ -87,7 +112,8 @@ def learn_hub(self, request, course):
                 last_chat = ChatHistory.objects.filter(user=user_profile, lesson=user_progress.lesson).order_by('-timestamp').first()
                 if last_chat:
                     # Using the same parsing logic for last_chat.reply
-                    response_data = parse_response(last_chat.reply)
+                    response_data = parse_response(last_chat.reply)        
+                    print(response_data)
 
                     # Extract and store values
                     message = response_data.get('message', '')
