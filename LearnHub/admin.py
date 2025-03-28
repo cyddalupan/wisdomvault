@@ -38,41 +38,38 @@ def learn_hub(self, request, course):
 
     learn_hub_instance = form.save(commit=False)
 
+        # Function to safely parse response string
+    def parse_response(raw_response):
+        try:
+            return json.loads(raw_response)
+        except (json.JSONDecodeError, TypeError):
+            return {'message': 'Invalid format', 'topic_score': 0}
+
     if request.method == 'POST' and form.is_valid():
         # Call the AI function with user input and course details
         response_json = perform_learn_hub(
             self, learn_hub_instance.user_input, user_profile, course
-        )
-        
-        if not response_json:
-            response_json = '{"message": "No response received.", "topic_score": 0}'
+        ) or '{"message": "No response received.", "topic_score": 0}'  # Default response if None
 
         # Parse the JSON response string
-        response_data = json.loads(response_json)
+        response_data = parse_response(response_json)
 
         # Extract json
         message = response_data.get('message', '')
         topic_score = response_data.get('topic_score', 0)
 
         # Ensure topic_score is treated as a number
-        if isinstance(topic_score, str):  
-            topic_score = float(topic_score)
-        
-        if topic_score >= 95 and (user_progress and not user_progress.completed):
-            if user_progress:
-                # Get the next lesson based on the order
-                next_lesson = lessons.filter(order__gt=user_progress.lesson.order).first()
+        topic_score = float(topic_score) if isinstance(topic_score, str) else topic_score
 
-                if next_lesson:
-                    # Update user progress to the next lesson
-                    user_progress.lesson = next_lesson
-                    user_progress.completed = False
-                    user_progress.save()
-                    topic_score = 1
-                else:
-                    # If no more lessons, (user has completed the course)
-                    user_progress.completed = True
-                    user_progress.save()
+        # Update user progress based on topic_score
+        if topic_score >= 95 and (user_progress and not user_progress.completed):
+            next_lesson = lessons.filter(order__gt=user_progress.lesson.order).first()
+            if next_lesson:
+                user_progress.lesson = next_lesson
+                user_progress.completed = False
+            else:
+                user_progress.completed = True
+            user_progress.save()
 
         # Store the message
         learn_hub_instance.ai_response = message
@@ -89,9 +86,11 @@ def learn_hub(self, request, course):
             if user_progress:
                 last_chat = ChatHistory.objects.filter(user=user_profile, lesson=user_progress.lesson).order_by('-timestamp').first()
                 if last_chat:
-                    response_data = json.loads(last_chat.reply)
+                    # Using the same parsing logic for last_chat.reply
+                    response_data = parse_response(last_chat.reply)
+
+                    # Extract and store values
                     message = response_data.get('message', '')
-                    topic_score = response_data.get('topic_score', 0)
                     learn_hub_instance.ai_response = message
                     ai_response = learn_hub_instance.formatted_output
 
