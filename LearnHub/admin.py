@@ -41,6 +41,7 @@ def learn_hub(self, request, course):
         try:
             # Strip the response of leading/trailing whitespace
             raw_response = raw_response.strip()
+            print("raw_response", raw_response)
 
             # Initialize default values
             message = 'No message found'
@@ -71,6 +72,7 @@ def learn_hub(self, request, course):
             self, learn_hub_instance.user_input, user_profile, course
         ) or '{"message": "No response received.", "topic_score": 0}'  # Default response if None
 
+        print("response_json", response_json)
         # Parse the JSON response string
         response_data = parse_response(response_json)
 
