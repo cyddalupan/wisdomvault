@@ -254,6 +254,7 @@ JAZZMIN_SETTINGS = {
         "LearnHub.Angular": "fas fa-cubes",
         "LearnHub.Lawyer": "fas fa-gavel",
         "LearnHub.Phplang": "fas fa-code",
-        "LearnHub.Htmlcss": "fas fa-paint-brush"
+        "LearnHub.Htmlcss": "fas fa-paint-brush",
+        "LearnHub.Tableau": "fas fa-chart-bar",
     }
 }

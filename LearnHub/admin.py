@@ -5,7 +5,7 @@ import re
 from django.contrib import admin
 from django.urls import path
 from django.shortcuts import render
-from .models import Angular, DigitalMarketing, Htmlcss, Phplang, Python, SoftwareQa, Lawyer
+from .models import Angular, DigitalMarketing, Htmlcss, Phplang, Python, SoftwareQa, Lawyer, Tableau
 from .forms import LearnHubForm
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -220,7 +220,6 @@ class PythonAdmin(admin.ModelAdmin):
 # Register the model and admin class
 admin.site.register(Python, PythonAdmin)
 
-
 # Software QA
 class SoftwareQaAdmin(admin.ModelAdmin):
     change_list_template = "admin/learnhub.html"
@@ -240,6 +239,16 @@ class HtmlcssAdmin(admin.ModelAdmin):
         return learn_hub(self, request, course)
 # Register the model and admin class
 admin.site.register(Htmlcss, HtmlcssAdmin)
+
+
+class TableauAdmin(admin.ModelAdmin):
+    change_list_template = "admin/learnhub.html"
+    def changelist_view(self, request, extra_context=None):
+        course_name = "Tableau"
+        course = Course.objects.filter(name=course_name).first()
+        return learn_hub(self, request, course)
+# Register the model and admin class
+admin.site.register(Tableau, TableauAdmin)
 
 class PhplangAdmin(admin.ModelAdmin):
     change_list_template = "admin/learnhub.html"
