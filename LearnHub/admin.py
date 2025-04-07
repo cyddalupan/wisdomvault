@@ -48,7 +48,7 @@ def learn_hub(self, request, course):
             topic_score = 0
 
             # Use regex to extract the message based on fixed delimiters
-            message_match = re.search(r'{"message": "(.*?)", "topic_score":', raw_response, re.DOTALL)
+            message_match = re.search(r'{"message": "(.*?)",\s*"topic_score":', raw_response, re.DOTALL)
             print("message_match", message_match)
             if message_match:
                 message = message_match.group(1)  # Extract the message
