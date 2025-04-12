@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     'page',
     'chat',
     'LearnHub',
+    'assistant',
 ]
 
 MIDDLEWARE = [
