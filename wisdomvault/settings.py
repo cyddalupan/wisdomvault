@@ -257,5 +257,8 @@ JAZZMIN_SETTINGS = {
         "LearnHub.Phplang": "fas fa-code",
         "LearnHub.Htmlcss": "fas fa-paint-brush",
         "LearnHub.Tableau": "fas fa-chart-bar",
+        "assistant.Assistant": "fas fa-robot",
+        "assistant.ChatHistory": "fas fa-comments",
+        "assistant.Tableau": "fas fa-chart-pie"
     }
 }
