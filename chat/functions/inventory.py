@@ -1,5 +1,6 @@
 import json
 import time
+from datetime import date
 
 from chat.cache import delete_cache, get_cache, update_cache
 from chat.service import get_service
@@ -72,16 +73,12 @@ def generate_tools():
                         "type": "boolean",
                         "description": "user confirms that the product will be deleted",
                     },
-                    "row_number": {
-                        "type": "integer",
-                        "description": "row of the product to delete",
-                    },
                     "item_name": {
                         "type": "string",
                         "description": "name of item/product",
                     },
                 },
-                "required": ["row_number", "confirmation"],
+                "required": ["item_name", "confirmation"],
             },
         }
     })
@@ -167,11 +164,10 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
         arguments_dict = json.loads(arguments)
 
         if function_name == "delete_row":
-            row_number = arguments_dict.get('row_number')
             item_name = arguments_dict.get('item_name')
             confirmation = arguments_dict.get('confirmation', False)
-            if confirmation and row_number:
-                is_success = delete_row(facebook_page_instance.sheet_id, row_number, facebook_page_instance.page_id)
+            if confirmation and item_name:
+                is_success = delete_row(facebook_page_instance.sheet_id, item_name, facebook_page_instance.page_id)
                 if is_success:
                     summarizer(user_profile)
                     return f"🗑️{item_name} - Deleted"
@@ -190,73 +186,58 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
                 return f"✏️Product Updated"
     return None
 
-def delete_row(sheet_id, row_id, page_id):
+def delete_row(sheet_id, product_name, page_id):
     service = get_service()
 
     try:
-        # Ensure row_id is an integer
-        row_id = int(row_id)
+        # Prepare log entry for deletion in Inventory_Logs
+        today = date.today().isoformat()
+        log_entry = [[today, product_name, "Deleted", "True"]]
 
-        # Retrieve the current sheets metadata
-        sheets_metadata = service.spreadsheets().get(spreadsheetId=sheet_id).execute()
-
-        # Extract the sheet ID for the 'Inventory' sheet
-        existing_sheets = {
-            sheet['properties']['title']: sheet['properties']['sheetId']
-            for sheet in sheets_metadata['sheets']
-        }
-
-        inventory_sheet_id = existing_sheets.get("Inventory")
-        if inventory_sheet_id is None:
-            raise ValueError("The sheet 'Inventory' does not exist in the spreadsheet.")
-
-        # Prepare the request to delete the row
-        delete_row_request = {
-            "deleteDimension": {
-                "range": {
-                    "sheetId": inventory_sheet_id,
-                    "dimension": "ROWS",
-                    "startIndex": row_id - 1,
-                    "endIndex": row_id,  # Google Sheets uses exclusive end index
-                }
-            }
-        }
-
-        # Execute the request
-        response = service.spreadsheets().batchUpdate(
+        # Append the deletion log to Inventory_Logs
+        service.spreadsheets().values().append(
             spreadsheetId=sheet_id,
-            body={"requests": [delete_row_request]}
+            range="Inventory_Logs",
+            valueInputOption="USER_ENTERED",
+            body={"values": log_entry}
         ).execute()
 
         delete_cache(page_id, cache_type)
         return True
 
     except Exception as e:
-        print(f"Error deleting row: {e}")
+        print(f"Error logging deletion: {e}")
         return False
 
 def add_row(sheet_id, arguments_dict, page_id):
-    product_code = arguments_dict.get('product_code', "")
     name = arguments_dict.get('name', "")
-    stocks = arguments_dict.get('stocks', 0)
-    price = arguments_dict.get('price', "")
-    description = arguments_dict.get('description', "")
+    fields_to_log = {
+        'Product Code': arguments_dict.get('product_code', ""),
+        'Stocks': arguments_dict.get('stocks', None),
+        'Price': arguments_dict.get('price', None),
+        'Description': arguments_dict.get('description', ""),
+    }
+    fields_to_log = {k: v for k, v in fields_to_log.items() if v is not None and v != ""}  # Filter out empty values
+
     service = get_service()
+    today = date.today().isoformat()  # Gets today's date in 'YYYY-MM-DD' format
+    new_rows = []
+
+    # Add initial log for product name creation
+    if name:
+        new_rows.append([today, "", "Name", name])
+
+    # Add logs for other fields
+    for column, value in fields_to_log.items():
+        new_rows.append([today, name, column, value])
 
     try:
-        # Extract the new row data to be appended
-        new_row = [
-            [name, product_code, stocks, price, description]
-        ]
-        
-        # Use the values.append() method to append the new row at the end
+        # Use the values.append() method to append the new rows at the end
         response = service.spreadsheets().values().append(
             spreadsheetId=sheet_id,
-            range="Inventory",  # The range where we want to append the data (automatically adds to the end)
-            valueInputOption="USER_ENTERED",  # This will allow for formatting and conversion of values (like numbers)
-            body={
-                "values": new_row
-            }
+            range="Inventory_Logs", 
+            valueInputOption="USER_ENTERED",
+            body={"values": new_rows}
         ).execute()
 
         print("Row added successfully.")
@@ -264,7 +245,7 @@ def add_row(sheet_id, arguments_dict, page_id):
         return True
 
     except Exception as e:
-        print(f"Error adding row: {e}")
+        print(f"Error adding rows: {e}")
         return False
 
 def edit_row(sheet_id, arguments_dict, page_id):
