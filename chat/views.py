@@ -134,6 +134,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         if not instruction(facebook_page_instance):
             if user_profile.task == "inventory":
                 instruction = inventory.instruction
+                print("inventory instruction", instruction(facebook_page_instance))
                 tools = inventory.generate_tools()
                 tool_function = inventory.tool_function
             elif user_profile.task == "other":

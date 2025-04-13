@@ -57,7 +57,7 @@ def instruction(facebook_page_instance, target_row=None):
                 # Read the data from the "Inventory" sheet
                 result = service.spreadsheets().values().get(
                     spreadsheetId=sheet_id,
-                    range="Inventory"
+                    range="Inventory_Data"
                 ).execute()
 
                 values = result.get('values', [])
@@ -93,6 +93,7 @@ def instruction(facebook_page_instance, target_row=None):
         + (
             f"Live Inventory:\n{inventory}\n\n"
             f"For reference, this is the active inventory stored on Google Sheets.\n\n"
+            f"We do not need to tell or sell the users about deleted products. "
             f"Use the 'sale' function if the user wants to buy. Before completing the sale, confirm the details: "
             f"Total cost and list of products being purchased.\n\n"
             f"Please review the products and total cost, and confirm if you'd like to proceed with the sale. "
