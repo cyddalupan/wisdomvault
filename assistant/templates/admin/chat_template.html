@@ -1,169 +1,55 @@
 {% extends "admin/base_site.html" %}
 
 {% load crispy_forms_tags %}
+{% load markdown_extras %}
 
 {% block content %}
-<div class="chat-container col-12" style="height: calc(92vh - 150px); padding: 20px; background-color: #f0f0f5; overflow-y: auto;">
-    <!-- Assistant message -->
-    <div class="col-12 mb-3" style="text-align: left;">
-      <div style="background-color: #e2e3e5; color: black; display: inline-block; border-radius: 10px; padding: 10px; max-width: 70%;">
-        I need help with a billing issue.
-      </div>
+<form method="post" style="margin-bottom: 20px;">
+  {% csrf_token %}
+  <button type="submit" name="clear_chat" class="btn btn-danger">
+    <i class="fas fa-trash-alt"></i> Clear Conversation and Start a New Question
+  </button>
+</form>
+<div class="chat-container col-12" style="height: calc(86vh - 150px); padding: 20px; background-color: #f0f0f5; overflow-y: auto;">
+  {% if chat_history %}
+  {% for chat in chat_history %}
+  {% if chat.role == "assistant" %}
+  <div class="col-12 mb-3" style="text-align: left;">
+    <div style="background-color: #e2e3e5; color: black; display: inline-block; border-radius: 10px; padding: 10px; max-width: 70%;">
+      <i class="fas fa-user-tie" style="float: left;position: relative;top: 4px;margin-right: 10px;"></i></i> {{ chat.content|markdown }}
     </div>
-  
-    <!-- User message -->
-    <div class="col-12 mb-3" style="text-align: right;">
-      <div style="background-color: #007bff; color: white; display: inline-block; border-radius: 10px; padding: 10px; max-width: 70%;">
-        Sure, can you tell me more about it?
-      </div>
-    </div>
-    <div class="col-12 mb-3" style="text-align: left;">
-        <div style="background-color: #e2e3e5; color: black; display: inline-block; border-radius: 10px; padding: 10px; max-width: 70%;">
-          I need help with a billing issue.
-        </div>
-      </div>
-    
-      <!-- User message -->
-      <div class="col-12 mb-3" style="text-align: right;">
-        <div style="background-color: #007bff; color: white; display: inline-block; border-radius: 10px; padding: 10px; max-width: 70%;">
-          Sure, can you tell me more about it?
-        </div>
-      </div> <div class="col-12 mb-3" style="text-align: left;">
-        <div style="background-color: #e2e3e5; color: black; display: inline-block; border-radius: 10px; padding: 10px; max-width: 70%;">
-          I need help with a billing issue.
-        </div>
-      </div>
-    
-      <!-- User message -->
-      <div class="col-12 mb-3" style="text-align: right;">
-        <div style="background-color: #007bff; color: white; display: inline-block; border-radius: 10px; padding: 10px; max-width: 70%;">
-          Sure, can you tell me more about it?
-        </div>
-      </div> <div class="col-12 mb-3" style="text-align: left;">
-        <div style="background-color: #e2e3e5; color: black; display: inline-block; border-radius: 10px; padding: 10px; max-width: 70%;">
-          I need help with a billing issue.
-        </div>
-      </div>
-    
-      <!-- User message -->
-      <div class="col-12 mb-3" style="text-align: right;">
-        <div style="background-color: #007bff; color: white; display: inline-block; border-radius: 10px; padding: 10px; max-width: 70%;">
-          Sure, can you tell me more about it?
-        </div>
-      </div> <div class="col-12 mb-3" style="text-align: left;">
-        <div style="background-color: #e2e3e5; color: black; display: inline-block; border-radius: 10px; padding: 10px; max-width: 70%;">
-          I need help with a billing issue.
-        </div>
-      </div>
-    
-      <!-- User message -->
-      <div class="col-12 mb-3" style="text-align: right;">
-        <div style="background-color: #007bff; color: white; display: inline-block; border-radius: 10px; padding: 10px; max-width: 70%;">
-          Sure, can you tell me more about it?
-        </div>
-      </div> <div class="col-12 mb-3" style="text-align: left;">
-        <div style="background-color: #e2e3e5; color: black; display: inline-block; border-radius: 10px; padding: 10px; max-width: 70%;">
-          I need help with a billing issue.
-        </div>
-      </div>
-    
-      <!-- User message -->
-      <div class="col-12 mb-3" style="text-align: right;">
-        <div style="background-color: #007bff; color: white; display: inline-block; border-radius: 10px; padding: 10px; max-width: 70%;">
-          Sure, can you tell me more about it?
-        </div>
-      </div> <div class="col-12 mb-3" style="text-align: left;">
-        <div style="background-color: #e2e3e5; color: black; display: inline-block; border-radius: 10px; padding: 10px; max-width: 70%;">
-          I need help with a billing issue.
-        </div>
-      </div>
-    
-      <!-- User message -->
-      <div class="col-12 mb-3" style="text-align: right;">
-        <div style="background-color: #007bff; color: white; display: inline-block; border-radius: 10px; padding: 10px; max-width: 70%;">
-          Sure, can you tell me more about it?
-        </div>
-      </div> <div class="col-12 mb-3" style="text-align: left;">
-        <div style="background-color: #e2e3e5; color: black; display: inline-block; border-radius: 10px; padding: 10px; max-width: 70%;">
-          I need help with a billing issue.
-        </div>
-      </div>
-    
-      <!-- User message -->
-      <div class="col-12 mb-3" style="text-align: right;">
-        <div style="background-color: #007bff; color: white; display: inline-block; border-radius: 10px; padding: 10px; max-width: 70%;">
-          Sure, can you tell me more about it?
-        </div>
-      </div> <div class="col-12 mb-3" style="text-align: left;">
-        <div style="background-color: #e2e3e5; color: black; display: inline-block; border-radius: 10px; padding: 10px; max-width: 70%;">
-          I need help with a billing issue.
-        </div>
-      </div>
-    
-      <!-- User message -->
-      <div class="col-12 mb-3" style="text-align: right;">
-        <div style="background-color: #007bff; color: white; display: inline-block; border-radius: 10px; padding: 10px; max-width: 70%;">
-          Sure, can you tell me more about it?
-        </div>
-      </div> <div class="col-12 mb-3" style="text-align: left;">
-        <div style="background-color: #e2e3e5; color: black; display: inline-block; border-radius: 10px; padding: 10px; max-width: 70%;">
-          I need help with a billing issue.
-        </div>
-      </div>
-    
-      <!-- User message -->
-      <div class="col-12 mb-3" style="text-align: right;">
-        <div style="background-color: #007bff; color: white; display: inline-block; border-radius: 10px; padding: 10px; max-width: 70%;">
-          Sure, can you tell me more about it?
-        </div>
-      </div> <div class="col-12 mb-3" style="text-align: left;">
-        <div style="background-color: #e2e3e5; color: black; display: inline-block; border-radius: 10px; padding: 10px; max-width: 70%;">
-          I need help with a billing issue.
-        </div>
-      </div>
-    
-      <!-- User message -->
-      <div class="col-12 mb-3" style="text-align: right;">
-        <div style="background-color: #007bff; color: white; display: inline-block; border-radius: 10px; padding: 10px; max-width: 70%;">
-          Sure, can you tell me more about it?
-        </div>
-      </div> <div class="col-12 mb-3" style="text-align: left;">
-        <div style="background-color: #e2e3e5; color: black; display: inline-block; border-radius: 10px; padding: 10px; max-width: 70%;">
-          I need help with a billing issue.
-        </div>
-      </div>
-    
-      <!-- User message -->
-      <div class="col-12 mb-3" style="text-align: right;">
-        <div style="background-color: #007bff; color: white; display: inline-block; border-radius: 10px; padding: 10px; max-width: 70%;">
-          Sure, can you tell me more about it?
-        </div>
-      </div> <div class="col-12 mb-3" style="text-align: left;">
-        <div style="background-color: #e2e3e5; color: black; display: inline-block; border-radius: 10px; padding: 10px; max-width: 70%;">
-          I need help with a billing issue.
-        </div>
-      </div>
-    
-      <!-- User message -->
-      <div class="col-12 mb-3" style="text-align: right;">
-        <div style="background-color: #007bff; color: white; display: inline-block; border-radius: 10px; padding: 10px; max-width: 70%;">
-          Sure, can you tell me more about it?
-        </div>
-      </div>
-  
-    <!-- Additional messages can be added below similarly -->
-    
   </div>
+  {% else %}
+  <div class="col-12 mb-3" style="text-align: right;">
+    <div style="background-color: #007bff; color: white; display: inline-block; border-radius: 10px; padding: 10px; max-width: 70%;">
+      <i class="fas fa-user" style="margin-right: 10px;"></i> {{ chat.content }}
+    </div>
+  </div>
+  {% endif %}
+{% endfor %}
+  {% else %}
+    <div class="col-12 mb-3" style="text-align: center;">
+      <div style="background-color: #ffdd57; color: black; display: inline-block; border-radius: 10px; padding: 20px; max-width: 70%;">
+        <i class="fas fa-comments"></i> How can I help you?
+      </div>
+    </div>
+  {% endif %}
+</div>
+<form method="post" class="col-12">
+  {% csrf_token %}
   <div class="input-group col-12 mt-3">
-    <input type="text" class="form-control" placeholder="Type your message here...">
+    <input type="text" class="form-control" name="chat_message" placeholder="Type your message here...">
     <div class="input-group-append">
-      <button class="btn btn-primary" type="button">Send</button>
+      <button class="btn btn-primary" type="submit">
+        <i class="fas fa-paper-plane"></i> Send
+      </button>
     </div>
   </div>
+</form>
   
   <script>
     // Ensure the chat starts scrolled at the bottom
-    document.addEventListener("DOMContentLoaded", function() {
+    document.addEventListener("DOMContentLoaded", function () {
       var chatContainer = document.querySelector('.chat-container');
       chatContainer.scrollTop = chatContainer.scrollHeight;
     });
