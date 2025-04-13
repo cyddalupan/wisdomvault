@@ -25,7 +25,7 @@ def instruction(facebook_page_instance, target_row=None):
                 # Read the data from the "Inventory" sheet
                 result = service.spreadsheets().values().get(
                     spreadsheetId=sheet_id,
-                    range="Inventory"
+                    range="Inventory_Data"
                 ).execute()
 
                 values = result.get('values', [])

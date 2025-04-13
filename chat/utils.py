@@ -109,7 +109,7 @@ def summarize_sales(facebook_page_instance):
             # Read the data from the "Sales" sheet
             result = service.spreadsheets().values().get(
                 spreadsheetId=sheet_id,
-                range="Sales"
+                range="Orders"
             ).execute()
 
             sales_message = ""
@@ -119,7 +119,7 @@ def summarize_sales(facebook_page_instance):
             else:
                 # Determine how many rows to fetch
                 total_rows = len(values)
-                start_row = max(0, total_rows - 400)  # Get the last 400 rows or all if less than 400
+                start_row = max(0, total_rows - 200)  # Get the last 400 rows or all if less than 400
 
                 # Include the header
                 sales_data = values[:1] + values[start_row:]
