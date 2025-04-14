@@ -46,7 +46,6 @@ def instruction(facebook_page_instance, target_row=None):
     page_id = facebook_page_instance.page_id
     cached_data = get_cache(page_id, cache_type)
     if current_time - cached_data['timestamp'] > 20:
-        print("Fetching new data from Google Sheets...")
         if facebook_page_instance and getattr(facebook_page_instance, 'sheet_id', None):
             sheet_id = facebook_page_instance.sheet_id
 

@@ -134,7 +134,6 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         if not instruction(facebook_page_instance):
             if user_profile.task == "inventory":
                 instruction = inventory.instruction
-                print("inventory instruction", instruction(facebook_page_instance))
                 tools = inventory.generate_tools()
                 tool_function = inventory.tool_function
             elif user_profile.task == "other":
@@ -242,9 +241,6 @@ def ai_process(user_profile, facebook_page_instance, first_run):
 
     # Attempt to generate a completion using the OpenAI API
     try:
-        print("AI CALL", messages)
-        print("AI Tools", tools)
-
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=messages,
@@ -255,17 +251,12 @@ def ai_process(user_profile, facebook_page_instance, first_run):
 
         # Handle tool calls if present
         tool_calls = completion.choices[0].message.tool_calls
-        print("###tool_calls", tool_calls)
         if tool_calls:
-            print("###ORIGINAL TOOL", tool_calls)
             completion2 = escalate_function(messages, tools)
             tool_calls2 = completion2.choices[0].message.tool_calls
             
-            print("### SECOND TOOL", tool_calls2)
             try:
                 if tool_calls[0].function != tool_calls2[0].function:            
-                    print("### MASTER COMPARE 1", tool_calls[0].function)        
-                    print("### MASTER COMPARE 1", tool_calls2[0].function)
                     completion = escalate_master(messages, tools, tool_calls[0].function, tool_calls2[0].function)
                     response_content = completion.choices[0].message.content
                     # Handle tool calls if present
@@ -276,23 +267,19 @@ def ai_process(user_profile, facebook_page_instance, first_run):
             if tool_calls:
                 response_content = trigger_tool_calls(first_run, tool_calls, user_profile, facebook_page_instance, tool_function)
         else:
-            print("### NO TOOLS RESPONSE:", response_content)
             messages.append({
                 "role": "assistant",
                 "content": response_content
             })
             escalate_result = escalate_normal(messages)
-            print("escalate_result", escalate_result)
             if escalate_result == "BAD":
                 completion = escalate_bad(messages, tools)
                 response_content = completion.choices[0].message.content
 
                 # Handle tool calls if present
                 tool_calls = completion.choices[0].message.tool_calls
-                print("###Bad tool_calls", tool_calls)
                 if tool_calls:
                     response_content = trigger_tool_calls(first_run, tool_calls, user_profile, facebook_page_instance, tool_function)
-                print("### BAD FINAL RESPONSE:", response_content)
             if not response_content and first_run:
                 # Retry the process if tool function fails during the first run
                 response_content = ai_process(user_profile, facebook_page_instance, False)
