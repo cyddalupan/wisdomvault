@@ -74,25 +74,29 @@ def generate_tools():
                 "properties": {
                     "items": {
                         "type": "array",
-                        "description": "List of items to be sold with their quantities, identified by inventory row number.",
+                        "description": "List of items to be sold with their quantities, identified by inventory name.",
                         "items": {
                             "type": "object",
                             "properties": {
-                                "row_number": {
-                                    "type": "integer",
-                                    "description": "Row number in the inventory sheet for the product.",
+                                "name": {
+                                    "type": "string",
+                                    "description": "name of the product.",
+                                },
+                                "price": {
+                                    "type": "string",
+                                    "description": "name of the product.",
                                 },
                                 "quantity": {
                                     "type": "integer",
                                     "description": "Quantity of the product being sold.",
                                 },
                             },
-                            "required": ["row_number", "quantity"],
+                            "required": ["name", "quantity"],
                         },
                     },
-                    "customer": {
+                    "remarks": {
                         "type": "string",
-                        "description": "Optional name of customer.",
+                        "description": "Optional remarks.",
                     },
                     "confirmation": {
                         "type": "boolean",
@@ -121,161 +125,46 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
         
     return None
 
-def create_sale(sheet_id, arguments_dict, name):
+def create_sale(sheet_id, arguments_dict, remarks):
     print("create_sale dict", arguments_dict)
-    # Initialize Google Sheets API service
     service = get_service()
 
-    # Prepare to track the total sale amount
-    total_sale = 0
     sales_data = []
-    sale_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')  # Get current date and time for sale
+    sale_time = datetime.date.today().isoformat()  # Use today's date
 
-    # Iterate through the items in the sale to calculate total and prepare data
     for item in arguments_dict.get('items', []):
-        row_number = item.get('row_number')
+        name = item.get('name')
         quantity = item.get('quantity')
 
-        # Get product details from inventory
-        inventory_data = get_product_data_from_inventory(sheet_id, row_number)
+        # Prepare data for Sales_Logs sheet
+        sales_data.append([True, sale_time, name, quantity, remarks])
 
-        if inventory_data:
-            product_name = inventory_data.get('name')
-            price = inventory_data.get('price')
-            stock = inventory_data.get('stocks')
-            
-            # Check if there is enough stock for the sale
-            if stock < quantity:
-                print(f"Not enough stock for {product_name}. Available: {stock}, Required: {quantity}")
-                return False  # If not enough stock, return an error
-                
-            live_cost = price * quantity
-            total_sale += live_cost
-
-            # Prepare data for Sales sheet
-            sales_data.append([sale_time, product_name, quantity, live_cost, "Done"])
-
-            # Deduct stock from the Inventory sheet
-            new_stock = stock - quantity
-            update_inventory_stock(sheet_id, row_number, new_stock)
-
-    # Helper function to retrieve next truly empty row in the specified column
     def find_next_empty_row_in_column(sheet_id, sheet_name, column):
-        # Fetch all values in the specified column
         result = service.spreadsheets().values().get(
             spreadsheetId=sheet_id,
             range=f"{sheet_name}!{column}:{column}"
         ).execute()
 
         values = result.get('values', [])
-        
-        # Iterate over each row to find a truly empty spot for input
         for i, cell in enumerate(values):
-            # Check for rows that are effectively empty: no content or only whitespace in column A
             if len(cell) == 0 or cell[0].strip() == "":
                 return i + 1
 
-        # If no empty cell found, return the next row after the last found row with content
         return len(values) + 1
 
-    # Find next empty row in Sales and Transactions sheets
-    next_sales_row = find_next_empty_row_in_column(sheet_id, "Sales", "A")
-    next_transactions_row = find_next_empty_row_in_column(sheet_id, "Transactions", "A")
+    next_sales_row = find_next_empty_row_in_column(sheet_id, "Sales_Logs", "B")
 
-    # Step 1: Insert data into the 'Sales' sheet
     try:
         response_sales = service.spreadsheets().values().update(
             spreadsheetId=sheet_id,
-            range=f"Sales!A{next_sales_row}",
+            range=f"Sales_Logs!A{next_sales_row}",
             valueInputOption="USER_ENTERED",
             body={"values": sales_data}
         ).execute()
         
-        print("Sale data added to 'Sales' sheet successfully.")
+        print("Sale data added to 'Sales_Logs' sheet successfully.")
     except Exception as e:
-        print(f"Error adding sale data to 'Sales' sheet: {e}")
-        return False
-
-    # Step 2: Insert summary data into the 'Transactions' sheet
-    try:
-        # Insert transaction summary
-        transaction_data = [[sale_time, total_sale]]
-
-        response_summary = service.spreadsheets().values().update(
-            spreadsheetId=sheet_id,
-            range=f"Transactions!A{next_transactions_row}",
-            valueInputOption="USER_ENTERED",
-            body={"values": transaction_data}
-        ).execute()
-
-        print("Sale summary added to 'Transactions' sheet successfully.")
-    except Exception as e:
-        print(f"Error adding sale summary to 'Transactions' sheet: {e}")
-        return False
-
-    return True
-
-def get_product_data_from_inventory(sheet_id, row_number):
-    service = get_service()
-
-    # Get the specific row data from the Inventory sheet
-    range_ = f"Inventory!A{row_number}:E{row_number}"
-    try:
-        result = service.spreadsheets().values().get(
-            spreadsheetId=sheet_id,
-            range=range_
-        ).execute()
-    except Exception as e:
-        print(f"Error retrieving data: {e}")
-        return None
-
-    values = result.get('values', [])
-    
-    if values:
-        current_row = values[0]
-        name = current_row[0] if len(current_row) > 0 else None
-        product_code = current_row[1] if len(current_row) > 1 else None
-        stocks = int(current_row[2]) if len(current_row) > 2 and current_row[2] else 0
-
-        price_str = current_row[3] if len(current_row) > 3 and current_row[3] else "0"
-        try:
-            price = float(''.join(filter(lambda x: x.isdigit() or x == '.', price_str)))
-        except ValueError:
-            price = 0.0
-
-        description = current_row[4] if len(current_row) > 4 else None
-
-        return {
-            'name': name,
-            'product_code': product_code,
-            'stocks': stocks,
-            'price': price,
-            'description': description
-        }
-    else:
-        print(f"No data found for row {row_number}.")
-        return None
-
-def update_inventory_stock(sheet_id, row_number, new_stock):
-    service = get_service()
-
-    # Update the stock value in the Inventory sheet
-    range_ = f"Inventory!C{row_number}"  # Column C is for stock
-    body = {
-        "values": [[new_stock]]
-    }
-
-    try:
-        response = service.spreadsheets().values().update(
-            spreadsheetId=sheet_id,
-            range=range_,
-            valueInputOption="USER_ENTERED",
-            body=body
-        ).execute()
-
-        print(f"Stock for row {row_number} updated successfully.")
-    except Exception as e:
-        print(f"Error updating stock in Inventory sheet: {e}")
+        print(f"Error adding sale data to 'Sales_Logs' sheet: {e}")
         return False
 
     return True

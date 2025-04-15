@@ -85,7 +85,7 @@ def save_facebook_chat(request):
                     chat = Chat.objects.create(user=user_profile, message=message_text, reply='')
 
                     # Process the AI response based on the user's profile and task
-                    response_text = ai_process(user_profile, facebook_page_instance, True)
+                    response_text, triggered_function = ai_process(user_profile, facebook_page_instance, True)
                     
                     # Display topic on chat?
                     # if response_text and user_profile.user_type == 'admin':
@@ -95,12 +95,16 @@ def save_facebook_chat(request):
                     send_message(sender_id, response_text, facebook_page_instance)
 
                     # Save the reply to the Chat model
+
+                    if triggered_function:
+                        chat.refresh_from_db()
                     chat.reply = response_text
                     chat.save()
         return JsonResponse({'status': 'message processed', 'reply': response_text}, status=200)
     return JsonResponse({'error': 'Invalid request method'}, status=400)
 
 def ai_process(user_profile, facebook_page_instance, first_run):
+    triggered_function = False
     chat_history = getChatHistory(user_profile)
 
     # Initial empty instruction and tools setup
@@ -265,6 +269,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                 # Handle the case where the list is empty or the attribute is missing
                 pass
             if tool_calls:
+                triggered_function = True
                 response_content = trigger_tool_calls(first_run, tool_calls, user_profile, facebook_page_instance, tool_function)
         else:
             messages.append({
@@ -282,7 +287,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                     response_content = trigger_tool_calls(first_run, tool_calls, user_profile, facebook_page_instance, tool_function)
             if not response_content and first_run:
                 # Retry the process if tool function fails during the first run
-                response_content = ai_process(user_profile, facebook_page_instance, False)
+                response_content, triggered_function = ai_process(user_profile, facebook_page_instance, False)
             if not first_run:
                 # Send an apology if retries fail
                 response_content = "I am sorry it seems like I am getting confused. Can we try again?"
@@ -304,7 +309,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
             "Our team is working to resolve this. Please try again later."
         )
 
-    return response_content
+    return response_content, triggered_function
 
 def get_users_for_follow_up(hours=6):
     # New logic to encompass the entire hour leading to exactly 6 hours ago

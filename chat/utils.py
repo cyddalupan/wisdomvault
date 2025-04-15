@@ -51,6 +51,7 @@ def summarizer(user_profile):
     try:
         # Fetch all unsummarized chats for the user
         unsummarized_chats = Chat.objects.filter(user=user_profile, is_summarized=False)
+        print("### unsummarized_chats", unsummarized_chats)
         if not unsummarized_chats.exists():
             print(f"No unsummarized chats found for user with Facebook ID: {user_profile.name}")
             return None
