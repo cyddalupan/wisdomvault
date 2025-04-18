@@ -2,7 +2,7 @@ import json
 import time
 
 from chat.cache import get_cache, update_cache
-from chat.functions.pos import create_sale
+from chat.functions.inventory import create_sale
 from chat.service import get_service
 from chat.utils import summarizer
 

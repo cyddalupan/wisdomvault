@@ -7,7 +7,7 @@ from datetime import timedelta
 from openai import OpenAI
 from django.http import JsonResponse, HttpResponse
 from chat import utils
-from chat.functions import analyze, inventory, leads, other, pos, schedule, schedule_admin, customer, help, escalate
+from chat.functions import analyze, inventory, leads, other, schedule, schedule_admin, customer, help, escalate
 from chat.functions.categorizer import get_possible_topics, getCategory, topic_description
 from chat.functions.cron_sheet_cleaner import process_sales
 from chat.functions.get_name import bypass_get_name
@@ -136,7 +136,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         getCategory(user_profile, chat_history, facebook_page_instance)
 
         if not instruction(facebook_page_instance):
-            if user_profile.task == "inventory":
+            if user_profile.task == "inventory" or user_profile.task == "sales" :
                 instruction = inventory.instruction
                 tools = inventory.generate_tools()
                 tool_function = inventory.tool_function
@@ -144,10 +144,6 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                 instruction = other.instruction
                 tools = other.generate_tools()
                 tool_function = other.tool_function
-            elif user_profile.task == "sales":
-                instruction = pos.instruction
-                tools = pos.generate_tools()
-                tool_function = pos.tool_function
             elif user_profile.task == "analyze":
                 instruction = analyze.instruction
                 tools = analyze.generate_tools()
