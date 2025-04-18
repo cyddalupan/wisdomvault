@@ -200,9 +200,9 @@ def ai_process(user_profile, facebook_page_instance, first_run):
             {
                 "role": "system",
                 "content": (
-                    "Your name is KENSHI short for 'Kiosk and Easy Navigation System for Handling Inventory'. "
                     + leads_instruction
                     + (
+                        "Your name is KENSHI short for 'Kiosk and Easy Navigation System for Handling Inventory'. "
                         "Speak in taglish, keep replies short, No markdown just emoji and proper spacing. "
                         "be more casual, use 'po', 'opo', sir or maam. know the customer and use emotion to sell. "
                         "Your purpose is to assist customers with inquiries about products, promotions, pricing, inventory, and other business-related topics. "
