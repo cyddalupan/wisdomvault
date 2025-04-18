@@ -71,7 +71,7 @@ def save_facebook_chat(request):
                             # Fetch all admins for the page
                             admin_users = UserProfile.objects.filter(page_id=user_profile.page_id, user_type='admin')
                             # Loop through all admins and send them a message
-                            message_admin = f"{user_profile.name} sent an image 📷. This is a posible payment, Confirm on Google Sheets. Thank you! 😊"
+                            message_admin = f"{user_profile.name} sent an image 📷. This is a posible payment, Confirm on Google Sheets. Thank you! 😊" + (f" User's SMS is {user_profile.sms}" if user_profile.sms else "")
                             for admin in admin_users:
                                 Chat.objects.create(user=admin, message='', reply=message_admin)
                                 send_image(admin.facebook_id, image_url, facebook_page_instance)

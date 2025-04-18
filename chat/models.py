@@ -8,6 +8,7 @@ class UserProfile(models.Model):
     user_type = models.CharField(max_length=255)
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     task = models.CharField(max_length=255, default='', blank=True)
+    sms = models.CharField(max_length=15, default='', blank=True)
     summary = models.TextField(blank=True, null=True)
     is_leads_complete = models.BooleanField(default=False)
 

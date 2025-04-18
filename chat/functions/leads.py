@@ -3,7 +3,7 @@ import json
 from chat.service import get_service
 
 def instruction():
-    return "\nIMPORTANT: If no relevant topic is being discussed, proactively ask the user for their information: Mobile, Gender, Area, Birthday. Trigger function save_user_info once the user provides the details."
+    return "\nPlease collect and ensure the user provides their mobile number, gender, area, and birthday. This information is mandatory, and its importance should be communicated clearly and respectfully. Once obtained, trigger the `save_user_info` function."
 
 def generate_tools():
     return {
@@ -75,6 +75,7 @@ def save_user_info(tool_calls, user_profile, facebook_page_instance):
                     ).execute()
                     
                     user_profile.is_leads_complete = True
+                    user_profile.sms = mobile
                     user_profile.save()
 
                     print("User information saved successfully.")
