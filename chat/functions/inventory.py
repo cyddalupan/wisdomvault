@@ -170,10 +170,6 @@ def generate_tools():
                                     "type": "string",
                                     "description": "name of the product.",
                                 },
-                                "price": {
-                                    "type": "string",
-                                    "description": "name of the product.",
-                                },
                                 "quantity": {
                                     "type": "integer",
                                     "description": "Quantity of the product being sold.",
@@ -227,7 +223,8 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
                 return f"✏️Product Updated"
         
         if function_name == "create_sale":
-            is_success = create_sale(facebook_page_instance.sheet_id, arguments_dict, arguments_dict.get('customer'))
+            remarks =  arguments_dict.get('remarks', '')
+            is_success = create_sale(facebook_page_instance.sheet_id, arguments_dict, remarks, True)
             if is_success:
                 summarizer(user_profile)
                 return "📃Order Has been created!"
@@ -338,7 +335,7 @@ def edit_row(sheet_id, arguments_dict, page_id):
         print(f"Error logging change: {e}")
         return False
 
-def create_sale(sheet_id, arguments_dict, remarks):
+def create_sale(sheet_id, arguments_dict, remarks, is_approve):
     print("create_sale dict", arguments_dict)
     service = get_service()
 
@@ -350,7 +347,7 @@ def create_sale(sheet_id, arguments_dict, remarks):
         quantity = item.get('quantity')
 
         # Prepare data for Sales_Logs sheet
-        sales_data.append([True, sale_time, name, quantity, remarks])
+        sales_data.append([is_approve, sale_time, name, quantity, remarks])
 
     def find_next_empty_row_in_column(sheet_id, sheet_name, column):
         result = service.spreadsheets().values().get(

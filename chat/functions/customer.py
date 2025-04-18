@@ -121,16 +121,16 @@ def generate_tools():
                         "items": {
                             "type": "object",
                             "properties": {
-                                "row_number": {
-                                    "type": "integer",
-                                    "description": "Row number in the inventory sheet for the product.",
+                                "name": {
+                                    "type": "string",
+                                    "description": "name of the product.",
                                 },
                                 "quantity": {
                                     "type": "integer",
                                     "description": "Quantity of the product being sold.",
                                 },
                             },
-                            "required": ["row_number", "quantity"],
+                            "required": ["name", "quantity"],
                         },
                     },
                     "confirmation": {
@@ -153,9 +153,11 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
         arguments_dict = json.loads(arguments)
 
         if function_name == "create_sale":
-            is_success = create_sale(facebook_page_instance.sheet_id, arguments_dict, user_profile.name)
+            remarks = "Order from Facebook by: " + user_profile.name
+
+            is_success = create_sale(facebook_page_instance.sheet_id, arguments_dict, remarks, False)
             if is_success:
                 summarizer(user_profile)
-                return "📃Order Created, Please send payment confirmation, Salamat"
+                return "📃Order Created, Please send picture of payment, Salamat"
         
     return None

@@ -65,13 +65,13 @@ def save_facebook_chat(request):
                         if attachment['type'] == 'image':
                             image_url = attachment['payload']['url']
                             message_text = "[User Sends Image]"
-                            response_text = "Wait lang po, pa-review ko muna kay manager yung image. May iba ka pa bang kailangan? 😊"
+                            response_text = "Salamat, May iba ka pa bang kailangan? 😊"
                             Chat.objects.create(user=user_profile, message=message_text, reply=response_text)
                             send_message(sender_id, response_text, facebook_page_instance)
                             # Fetch all admins for the page
                             admin_users = UserProfile.objects.filter(page_id=user_profile.page_id, user_type='admin')
                             # Loop through all admins and send them a message
-                            message_admin = f"{user_profile.name} sent an image 📷. Could this be a payment or confirmation? Just a note: I can't automate this. Thank you! 😊"
+                            message_admin = f"{user_profile.name} sent an image 📷. This is a posible payment, Confirm on Google Sheets. Thank you! 😊"
                             for admin in admin_users:
                                 Chat.objects.create(user=admin, message='', reply=message_admin)
                                 send_image(admin.facebook_id, image_url, facebook_page_instance)
