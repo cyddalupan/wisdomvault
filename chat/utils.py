@@ -228,7 +228,7 @@ def escalate_master(legacy, tools, call1, call2):
     message = {
     "role": "system",
         "content": (
-            "You will provide the correct function tool call based on two sets of parameters from GPT. "
+            "Trigger the tool call function with complete accuracy and provide the correct function based on detailed analysis of two sets of parameters from GPT.  Note: Ensure accuracy by analyzing both parameter sets thoroughly before selecting the function call."
             f"GPT1 suggests: {call1} and GPT2 suggests: {call2}. "
             "Please carefully evaluate both suggestions and determine the appropriate parameters to use. "
             "The following messages are the instructions that GPT1 and GPT2 received, so decide wisely."
