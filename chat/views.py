@@ -124,14 +124,14 @@ def ai_process(user_profile, facebook_page_instance, first_run):
     if not user_profile.name:
         get_name_response = bypass_get_name(chat_history, user_profile)
         if get_name_response:
-            return get_name_response
+            return get_name_response, False
 
     # Determine the task and set up instructions, tools, and functions
     if user_profile.user_type == 'admin':
         # Escalete before anything else
         activeHelp =  escalate.isThereQuestion(facebook_page_instance)
         if activeHelp:
-            return escalate.bypass(activeHelp, chat_history, user_profile, facebook_page_instance)
+            return escalate.bypass(activeHelp, chat_history, user_profile, facebook_page_instance), False
 
         getCategory(user_profile, chat_history, facebook_page_instance)
 
