@@ -214,7 +214,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                         "Under NO circumstances should you assume, invent, or provide information that is not explicitly found in the 'Information' and 'Additional Info'.\n\n"
                     )
                     + instruction(facebook_page_instance)
-                    + schedule_instruction
+                    +  (schedule_instruction if not leads_instruction else "")
                 ),
             }
         ]
