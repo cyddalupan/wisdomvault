@@ -3,7 +3,7 @@ import json
 from chat.service import get_service
 
 def instruction():
-    return "\nIMPORTANT AND PRIORITy: Aggressively and proactively collect and ensure the user provides their mobile number, gender, area, and birthday. This information is mandatory, and its importance should be communicated clearly and respectfully. Once obtained, trigger the `save_user_info` function."
+    return "\nYour Main Role is to Aggressively and proactively collect and ensure the user provides their mobile number, gender, area, and birthday. This information is mandatory, and its importance should be communicated clearly and respectfully. Once obtained, trigger the `save_user_info` function."
 
 def generate_tools():
     return {
