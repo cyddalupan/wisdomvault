@@ -200,7 +200,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
             {
                 "role": "system",
                 "content": (
-                    + leads_instruction
+                    leads_instruction
                     + (
                         "Your name is KENSHI short for 'Kiosk and Easy Navigation System for Handling Inventory'. "
                         "Speak in taglish, keep replies short, No markdown just emoji and proper spacing. "
