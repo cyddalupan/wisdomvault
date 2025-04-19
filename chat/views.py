@@ -59,7 +59,8 @@ def save_facebook_chat(request):
                 )
                 message_text = event['message'].get('text')  # Message text sent by the user
 
-                 # Check for image attachment
+                # TODO: Potential KeyError if 'message' or 'attachments' are missing; add safer access/checks
+                # Check for image attachment
                 if 'attachments' in event['message']:
                     for attachment in event['message']['attachments']:
                         if attachment['type'] == 'image':
@@ -115,9 +116,10 @@ def ai_process(user_profile, facebook_page_instance, first_run):
     tools = []
     tool_function = None
 
+    # TODO: Bug - comparison operator used instead of assignment below. Should be '=' instead of '=='.
     # change task to customer when empty.
     if not user_profile.task:
-        user_profile.task == "customer"
+        user_profile.task == "customer"  # TODO: Fix assignment bug here
         user_profile.save()
 
     # Bypass All to get name
@@ -135,6 +137,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
 
         getCategory(user_profile, chat_history, facebook_page_instance)
 
+        # TODO: The `if not instruction(facebook_page_instance)` check right after setting instruction to function returning "" is redundant, consider refactoring.
         if not instruction(facebook_page_instance):
             if user_profile.task == "inventory" or user_profile.task == "sales" :
                 instruction = inventory.instruction
@@ -154,16 +157,17 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                 tool_function = schedule_admin.tool_function
     if user_profile.user_type == 'customer':
         instruction = customer.instruction
-    
+        
         if facebook_page_instance.is_online_selling:
             tools = customer.generate_tools()
         tool_function = customer.tool_function
         # All Leads Info
         leads_instruction = ""
+        # TODO: append returns a list inside a list causing nested list; should use extend() or +=
         if facebook_page_instance.is_leads and not user_profile.is_leads_complete:
             leads_instruction = leads.instruction()
-            tools.append(leads.generate_tools())
-        
+            tools.append(leads.generate_tools())  # TODO: This will append a list inside a list if generate_tools returns a list
+
         # All schedule Info
         schedule_instruction = ""
         if facebook_page_instance.is_schedule:
@@ -171,7 +175,8 @@ def ai_process(user_profile, facebook_page_instance, first_run):
             schedule_tool = schedule.generate_tools(facebook_page_instance, user_profile.facebook_id)
             if schedule_tool is not None:
                 tools.append(schedule_tool)
-
+    
+    # TODO: Variable naming - better to name 'instruction' as 'current_instruction' or something more descriptive because it's used as a function and overwritten.
     # Build AI message with instruction based on task
     if user_profile.user_type == "admin":
         current_task = user_profile.task.lower()  # Current task from user_profile
@@ -180,6 +185,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         # Fetch the possible topics dynamically
         possible_topics = get_possible_topics(facebook_page_instance)
         
+        # TODO: variable 'possible_topics' is fetched but never used after this point; consider using it or removing.
         # Prepare the system message dynamically with the current task and topic-specific instructions
         messages = [
             {
@@ -204,6 +210,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                     + (
                         "Your name is KENSHI short for 'Kiosk and Easy Navigation System for Handling Inventory'. "
                         "Speak in taglish, keep replies short, No markdown just emoji and proper spacing. "
+                        "Dominate the conversation and avoid asking what user wants, instead suggest what they need. "
                         "be more casual, use 'po', 'opo', sir or maam. know the customer and use emotion to sell. "
                         "Your purpose is to assist customers with inquiries about products, promotions, pricing, inventory, and other business-related topics. "
                         "STRICTLY base your answers ONLY on the 'Information' and 'Additional Info' provided. "
@@ -228,7 +235,6 @@ def ai_process(user_profile, facebook_page_instance, first_run):
         # Append the summary message to the list of messages
         messages.append(summary_message)
 
-
     # Include previous chat history in the conversation
     for chat in chat_history:
         if chat.message and chat.message != "":
@@ -239,7 +245,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
     # Add tool for customer when the system does not know what to say
     if first_run and user_profile.user_type != 'admin':
         tools = tools or []  # Ensure tools is initialized if None
-        tools.append(help.generate_tools())
+        tools.append(help.generate_tools())  # TODO: Confirm that generate_tools returns a single tool, otherwise might cause nested list
 
     # Attempt to generate a completion using the OpenAI API
     try:
@@ -323,7 +329,7 @@ def get_users_for_follow_up(hours=6):
 
 def my_cron_view(request):
     users = get_users_for_follow_up(6)
-    print(users)  # For testing, to see the retrieved users
+    print(users)  # TODO: Remove or replace with proper logging for production
 
     for user in users:
         page_instance = FacebookPage.objects.filter(page_id=user.page_id).first()
@@ -347,6 +353,7 @@ def chat_test_page(request):
 
 
 def function_tester(request):
+    # TODO: Remove commented code before deployment if not needed
     # Call the inventory setup function
     #inventory_setup.format_sheets("1u-Vy9b3KD4l3Ne2ZM3DXg8NmPxzv_QHJzXtzVPKeHu8")
     facebook_page_instance = FacebookPage.objects.get(page_id="123456789")
