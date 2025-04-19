@@ -7,8 +7,8 @@ from datetime import timedelta
 from openai import OpenAI
 from django.http import JsonResponse, HttpResponse
 from chat import utils
-from chat.functions import analyze, inventory, leads, other, schedule, schedule_admin, customer, help, escalate
-from chat.functions.categorizer import get_possible_topics, getCategory, topic_description
+from chat.functions import analyze, handle_image, inventory, leads, other, schedule, schedule_admin, customer, help, escalate
+from chat.functions.categorizer import getCategory, topic_description
 from chat.functions.cron_sheet_cleaner import process_sales
 from chat.functions.get_name import bypass_get_name
 from chat.toolcall import trigger_tool_calls
@@ -38,15 +38,23 @@ def save_facebook_chat(request):
         return HttpResponse('Invalid token', status=403)
 
     elif request.method == 'POST':
-        data = json.loads(request.body)
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Malformed JSON'}, status=400)
+
         response_text = ""
 
         for entry in data['entry']:
             for event in entry['messaging']:
                 sender_id = event['sender']['id']  # The user's Facebook ID
                 page_id = entry['id']  # The Facebook page ID
-                # Fetch the FacebookPage instance
-                facebook_page_instance = FacebookPage.objects.get(page_id=page_id)
+
+                try:
+                    facebook_page_instance = FacebookPage.objects.get(page_id=page_id)
+                except FacebookPage.DoesNotExist:
+                    return JsonResponse({'error': 'Page not found'}, status=404)
+
                 # Create or retrieve the user profile
                 user_profile, created = UserProfile.objects.get_or_create(
                     facebook_id=sender_id,
@@ -57,36 +65,19 @@ def save_facebook_chat(request):
                         'task': 'customer',
                     }
                 )
-                message_text = event['message'].get('text')  # Message text sent by the user
 
-                # TODO: Potential KeyError if 'message' or 'attachments' are missing; add safer access/checks
-                # Check for image attachment
-                if 'attachments' in event['message']:
-                    for attachment in event['message']['attachments']:
-                        if attachment['type'] == 'image':
-                            image_url = attachment['payload']['url']
-                            message_text = "[User Sends Image]"
-                            response_text = "Salamat, May iba ka pa bang kailangan? 😊"
-                            Chat.objects.create(user=user_profile, message=message_text, reply=response_text)
-                            send_message(sender_id, response_text, facebook_page_instance)
-                            # Fetch all admins for the page
-                            admin_users = UserProfile.objects.filter(page_id=user_profile.page_id, user_type='admin')
-                            # Loop through all admins and send them a message
-                            message_admin = f"{user_profile.name} sent an image 📷. This is a posible payment, Confirm on Google Sheets. Thank you! 😊" + (f" User's SMS is {user_profile.sms}" if user_profile.sms else "")
-                            for admin in admin_users:
-                                Chat.objects.create(user=admin, message='', reply=message_admin)
-                                send_image(admin.facebook_id, image_url, facebook_page_instance)
-                                send_message(
-                                    admin.facebook_id,
-                                    message_admin,
-                                    facebook_page_instance
-                                )
+                message = event.get('message', {})
+                message_text = message.get('text')
+
+                # Check if 'attachments' exist in the message dict before processing
+                if 'attachments' in message:
+                    handle_image(message, user_profile, sender_id, facebook_page_instance)
                 elif message_text:
                     # Save the incoming message to the Chat model
                     chat = Chat.objects.create(user=user_profile, message=message_text, reply='')
 
                     # Process the AI response based on the user's profile and task
-                    response_text, triggered_function = ai_process(user_profile, facebook_page_instance, True)
+                    response_text, triggered_function = process_ai_response(user_profile, facebook_page_instance, True)
                     
                     # Display topic on chat?
                     # if response_text and user_profile.user_type == 'admin':
@@ -96,7 +87,6 @@ def save_facebook_chat(request):
                     send_message(sender_id, response_text, facebook_page_instance)
 
                     # Save the reply to the Chat model
-
                     if triggered_function:
                         chat.refresh_from_db()
                     chat.reply = response_text
@@ -104,7 +94,7 @@ def save_facebook_chat(request):
         return JsonResponse({'status': 'message processed', 'reply': response_text}, status=200)
     return JsonResponse({'error': 'Invalid request method'}, status=400)
 
-def ai_process(user_profile, facebook_page_instance, first_run):
+def process_ai_response(user_profile, facebook_page_instance, first_run):
     triggered_function = False
     chat_history = getChatHistory(user_profile)
 
@@ -112,14 +102,13 @@ def ai_process(user_profile, facebook_page_instance, first_run):
     def instruction(facebook_page_instance):
         return ""
     
-    instruction = instruction
+    current_instruction = instruction
     tools = []
     tool_function = None
 
-    # TODO: Bug - comparison operator used instead of assignment below. Should be '=' instead of '=='.
     # change task to customer when empty.
     if not user_profile.task:
-        user_profile.task == "customer"  # TODO: Fix assignment bug here
+        user_profile.task = "customer"
         user_profile.save()
 
     # Bypass All to get name
@@ -137,36 +126,33 @@ def ai_process(user_profile, facebook_page_instance, first_run):
 
         getCategory(user_profile, chat_history, facebook_page_instance)
 
-        # TODO: The `if not instruction(facebook_page_instance)` check right after setting instruction to function returning "" is redundant, consider refactoring.
-        if not instruction(facebook_page_instance):
-            if user_profile.task == "inventory" or user_profile.task == "sales" :
-                instruction = inventory.instruction
-                tools = inventory.generate_tools()
-                tool_function = inventory.tool_function
-            elif user_profile.task == "other":
-                instruction = other.instruction
-                tools = other.generate_tools()
-                tool_function = other.tool_function
-            elif user_profile.task == "analyze":
-                instruction = analyze.instruction
-                tools = analyze.generate_tools()
-                tool_function = analyze.tool_function
-            elif user_profile.task == "schedule":
-                instruction = schedule_admin.instruction
-                tools = schedule_admin.generate_tools()
-                tool_function = schedule_admin.tool_function
+        if user_profile.task == "inventory" or user_profile.task == "sales" :
+            current_instruction = inventory.instruction
+            tools = inventory.generate_tools()
+            tool_function = inventory.tool_function
+        elif user_profile.task == "other":
+            current_instruction = other.instruction
+            tools = other.generate_tools()
+            tool_function = other.tool_function
+        elif user_profile.task == "analyze":
+            current_instruction = analyze.instruction
+            tools = analyze.generate_tools()
+            tool_function = analyze.tool_function
+        elif user_profile.task == "schedule":
+            current_instruction = schedule_admin.instruction
+            tools = schedule_admin.generate_tools()
+            tool_function = schedule_admin.tool_function
     if user_profile.user_type == 'customer':
-        instruction = customer.instruction
+        current_instruction = customer.instruction
         
         if facebook_page_instance.is_online_selling:
             tools = customer.generate_tools()
         tool_function = customer.tool_function
         # All Leads Info
         leads_instruction = ""
-        # TODO: append returns a list inside a list causing nested list; should use extend() or +=
         if facebook_page_instance.is_leads and not user_profile.is_leads_complete:
             leads_instruction = leads.instruction()
-            tools.append(leads.generate_tools())  # TODO: This will append a list inside a list if generate_tools returns a list
+            tools.extend(leads.generate_tools())
 
         # All schedule Info
         schedule_instruction = ""
@@ -176,16 +162,11 @@ def ai_process(user_profile, facebook_page_instance, first_run):
             if schedule_tool is not None:
                 tools.append(schedule_tool)
     
-    # TODO: Variable naming - better to name 'instruction' as 'current_instruction' or something more descriptive because it's used as a function and overwritten.
     # Build AI message with instruction based on task
     if user_profile.user_type == "admin":
         current_task = user_profile.task.lower()  # Current task from user_profile
-        topic_instruction = instruction(facebook_page_instance)  # Get business-related info based on current task
-        
-        # Fetch the possible topics dynamically
-        possible_topics = get_possible_topics(facebook_page_instance)
-        
-        # TODO: variable 'possible_topics' is fetched but never used after this point; consider using it or removing.
+        topic_instruction = current_instruction(facebook_page_instance)  # Get business-related info based on current task
+
         # Prepare the system message dynamically with the current task and topic-specific instructions
         messages = [
             {
@@ -220,7 +201,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                         "Never apologize instead ask manager using tool function 'ask_manager_help'. "
                         "Under NO circumstances should you assume, invent, or provide information that is not explicitly found in the 'Information' and 'Additional Info'.\n\n"
                     )
-                    + instruction(facebook_page_instance)
+                    + current_instruction(facebook_page_instance)
                     +  (schedule_instruction if not leads_instruction else "")
                 ),
             }
@@ -245,7 +226,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
     # Add tool for customer when the system does not know what to say
     if first_run and user_profile.user_type != 'admin':
         tools = tools or []  # Ensure tools is initialized if None
-        tools.append(help.generate_tools())  # TODO: Confirm that generate_tools returns a single tool, otherwise might cause nested list
+        tools.extend(help.generate_tools())
 
     # Attempt to generate a completion using the OpenAI API
     try:
@@ -291,7 +272,7 @@ def ai_process(user_profile, facebook_page_instance, first_run):
                     response_content = trigger_tool_calls(first_run, tool_calls, user_profile, facebook_page_instance, tool_function)
             if not response_content and first_run:
                 # Retry the process if tool function fails during the first run
-                response_content, triggered_function = ai_process(user_profile, facebook_page_instance, False)
+                response_content, triggered_function = process_ai_response(user_profile, facebook_page_instance, False)
             if not first_run:
                 # Send an apology if retries fail
                 response_content = "I am sorry it seems like I am getting confused. Can we try again?"
@@ -316,7 +297,6 @@ def ai_process(user_profile, facebook_page_instance, first_run):
     return response_content, triggered_function
 
 def get_users_for_follow_up(hours=6):
-    # New logic to encompass the entire hour leading to exactly 6 hours ago
     start_time = timezone.now() - timedelta(hours=hours + 1)  # From one hour before 6 hours ago
     end_time = timezone.now() - timedelta(hours=hours)  # Up to exactly 6 hours ago
 
@@ -329,7 +309,6 @@ def get_users_for_follow_up(hours=6):
 
 def my_cron_view(request):
     users = get_users_for_follow_up(6)
-    print(users)  # TODO: Remove or replace with proper logging for production
 
     for user in users:
         page_instance = FacebookPage.objects.filter(page_id=user.page_id).first()
@@ -353,14 +332,8 @@ def chat_test_page(request):
 
 
 def function_tester(request):
-    # TODO: Remove commented code before deployment if not needed
-    # Call the inventory setup function
-    #inventory_setup.format_sheets("1u-Vy9b3KD4l3Ne2ZM3DXg8NmPxzv_QHJzXtzVPKeHu8")
     facebook_page_instance = FacebookPage.objects.get(page_id="123456789")
-    #bookings = schedule.available_schedule(facebook_page_instance)
     bookings = schedule_admin.latest_data(facebook_page_instance)
-    #bookings = schedule.save_booking(facebook_page_instance, 16, 54321, "jon jon", "09882727321", "nakaka baliw")
-    print("## bookings", bookings)
     
     # Return a simple HTTP response to confirm it worked
     return HttpResponse("Inventory setup function executed successfully.")
