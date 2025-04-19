@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name="facebookpage",
-            name="is_schedule",
+            name="is_scheduling",
             field=models.BooleanField(default=True),
         ),
     ]

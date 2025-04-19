@@ -5,7 +5,7 @@ def trigger_tool_calls(first_run, tool_calls, user_profile, facebook_page_instan
         response_content = help.tool_function(tool_calls, user_profile)
     elif first_run and any(tool_call.function.name == "save_user_info" for tool_call in tool_calls):
         response_content = leads.save_user_info(tool_calls, user_profile, facebook_page_instance)
-    elif first_run and any(tool_call.function.name == "book_schedule" for tool_call in tool_calls):
+    elif first_run and any((tool_call.function.name == "book_schedule" or tool_call.function.name == "cancel_booking") for tool_call in tool_calls):
         response_content = schedule.book_schedule(tool_calls, user_profile, facebook_page_instance)
     elif tool_function:
         response_content = tool_function(tool_calls, user_profile, facebook_page_instance)

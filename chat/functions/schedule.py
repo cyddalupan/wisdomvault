@@ -367,5 +367,5 @@ def book_schedule(tool_calls, user_profile, facebook_page_instance):
             if confirmation:
                 save_response = cancel_booking(facebook_page_instance, fb_id)
                 print("Cancel Booking Response:", save_response)
-                return "🎉 Your booking has been successfully made! Thank you! 📅"
+                return "✅ Your booking cancellation was successful!"
     return None

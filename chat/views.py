@@ -156,12 +156,12 @@ def process_ai_response(user_profile, facebook_page_instance, first_run):
 
         # All schedule Info
         schedule_instruction = ""
-        if facebook_page_instance.is_schedule:
+        if facebook_page_instance.is_scheduling:
             schedule_instruction = schedule.instruction(facebook_page_instance, user_profile.facebook_id)
             schedule_tool = schedule.generate_tools(facebook_page_instance, user_profile.facebook_id)
             if schedule_tool is not None:
                 tools.append(schedule_tool)
-    
+
     # Build AI message with instruction based on task
     if user_profile.user_type == "admin":
         current_task = user_profile.task.lower()  # Current task from user_profile

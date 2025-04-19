@@ -28,7 +28,7 @@ def get_possible_topics(facebook_page):
         topics.append(Topics.SALES.value)
         topics.append(Topics.ANALYZE.value)
     
-    if facebook_page.is_schedule:
+    if facebook_page.is_scheduling:
         topics.append(Topics.SCHEDULE.value)
     
     topics.append(Topics.OTHER.value)
@@ -45,7 +45,7 @@ def topic_description(facebook_page):
         description += "- sales: Log new sales orders as the business owner when customers make purchases. Do not switch here if the user wants to check sales status; that is for analyze.\n"
         description += "- analyze: Review and obtain insights from sales history and data. Use this for generating reports based on past sales activities. Trigger here is something like: what is the sales status for today, this week, etc.\n"
     
-    if facebook_page.is_schedule:
+    if facebook_page.is_scheduling:
         description += "- schedule: View the latest schedules and availability for bookings. For any schedule-related questions, use this option. \n"
     
     # Add Instruction for Others
