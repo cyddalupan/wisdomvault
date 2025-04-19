@@ -152,7 +152,7 @@ def process_ai_response(user_profile, facebook_page_instance, first_run):
         leads_instruction = ""
         if facebook_page_instance.is_leads and not user_profile.is_leads_complete:
             leads_instruction = leads.instruction()
-            tools.extend(leads.generate_tools())
+            tools.append(leads.generate_tools())
 
         # All schedule Info
         schedule_instruction = ""
@@ -226,7 +226,7 @@ def process_ai_response(user_profile, facebook_page_instance, first_run):
     # Add tool for customer when the system does not know what to say
     if first_run and user_profile.user_type != 'admin':
         tools = tools or []  # Ensure tools is initialized if None
-        tools.extend(help.generate_tools())
+        tools.append(help.generate_tools())
 
     # Attempt to generate a completion using the OpenAI API
     try:
