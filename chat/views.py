@@ -245,7 +245,7 @@ def process_ai_response(user_profile, facebook_page_instance, first_run):
             tool_calls2 = completion2.choices[0].message.tool_calls
             
             try:
-                if tool_calls[0].function != tool_calls2[0].function:            
+                if not tool_calls2 or (tool_calls[0].function != tool_calls2[0].function):            
                     completion = escalate_master(messages, tools, tool_calls[0].function, tool_calls2[0].function)
                     response_content = completion.choices[0].message.content
                     # Handle tool calls if present
