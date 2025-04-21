@@ -11,6 +11,7 @@ from chat.functions import analyze, handle_image, inventory, leads, other, sched
 from chat.functions.categorizer import getCategory, topic_description
 from chat.functions.cron_sheet_cleaner import process_sales
 from chat.functions.get_name import bypass_get_name
+from chat.task_queue import enqueue_task
 from chat.toolcall import trigger_tool_calls
 from page.models import FacebookPage
 from .models import Chat, UserProfile
@@ -32,7 +33,7 @@ def index(request):
 @csrf_exempt
 def save_facebook_chat(request):
     if request.method == 'GET':
-        # Verify the webhook setup with Facebook
+        # ... existing GET code unchanged ...
         if request.GET.get('hub.verify_token') == VERIFY_TOKEN:
             return HttpResponse(request.GET['hub.challenge'])
         return HttpResponse('Invalid token', status=403)
@@ -43,19 +44,16 @@ def save_facebook_chat(request):
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Malformed JSON'}, status=400)
 
-        response_text = ""
-
         for entry in data['entry']:
             for event in entry['messaging']:
-                sender_id = event['sender']['id']  # The user's Facebook ID
-                page_id = entry['id']  # The Facebook page ID
+                sender_id = event['sender']['id']
+                page_id = entry['id']
 
                 try:
                     facebook_page_instance = FacebookPage.objects.get(page_id=page_id)
                 except FacebookPage.DoesNotExist:
                     return JsonResponse({'error': 'Page not found'}, status=404)
 
-                # Create or retrieve the user profile
                 user_profile, created = UserProfile.objects.get_or_create(
                     facebook_id=sender_id,
                     defaults={
@@ -69,29 +67,25 @@ def save_facebook_chat(request):
                 message = event.get('message', {})
                 message_text = message.get('text')
 
-                # Check if 'attachments' exist in the message dict before processing
                 if 'attachments' in message:
                     handle_image(message, user_profile, sender_id, facebook_page_instance)
                 elif message_text:
-                    # Save the incoming message to the Chat model
                     chat = Chat.objects.create(user=user_profile, message=message_text, reply='')
 
-                    # Process the AI response based on the user's profile and task
-                    response_text, triggered_function = process_ai_response(user_profile, facebook_page_instance, True)
-                    
-                    # Display topic on chat?
-                    # if response_text and user_profile.user_type == 'admin':
-                    #     response_text = f"{response_text}\n\n-Topic: {user_profile.task}"
+                    # Queue the processing function asynchronously
+                    def async_process():
+                        response_text, triggered_function = process_ai_response(user_profile, facebook_page_instance, True)
+                        send_message(sender_id, response_text, facebook_page_instance)
+                        if triggered_function:
+                            chat.refresh_from_db()
+                        chat.reply = response_text
+                        chat.save()
+                        return JsonResponse({'status': 'message processed', 'reply': response_text}, status=200)
 
-                    # Send the AI-generated response back to the user
-                    send_message(sender_id, response_text, facebook_page_instance)
+                    enqueue_task(async_process)
 
-                    # Save the reply to the Chat model
-                    if triggered_function:
-                        chat.refresh_from_db()
-                    chat.reply = response_text
-                    chat.save()
-        return JsonResponse({'status': 'message processed', 'reply': response_text}, status=200)
+        return JsonResponse({'status': 'message processed', 'reply': "WAIT"}, status=200)
+
     return JsonResponse({'error': 'Invalid request method'}, status=400)
 
 def process_ai_response(user_profile, facebook_page_instance, first_run):

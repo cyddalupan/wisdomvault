@@ -2,7 +2,7 @@ import time
 import json
 from datetime import datetime
 
-from chat.cache import get_cache, update_cache
+from chat.cache import delete_cache, get_cache, update_cache
 from chat.service import get_service
 
 # Global variable for caching
@@ -186,6 +186,10 @@ def save_booking(facebook_page_instance, row, fb_id, name, mobile, remarks=None)
                 body=body
             ).execute()
 
+            delete_cache(facebook_page_instance.page_id, cache_all)
+            delete_cache(facebook_page_instance.page_id, cache_available)
+            delete_cache(facebook_page_instance.page_id, cache_booking)
+
             return f"Booking updated for row {row + 1}: {name}"
 
         except Exception as e:
@@ -253,6 +257,10 @@ def cancel_booking(facebook_page_instance, fb_id):
                         valueInputOption="USER_ENTERED",
                         body=body
                     ).execute()
+
+                    delete_cache(facebook_page_instance.page_id, cache_all)
+                    delete_cache(facebook_page_instance.page_id, cache_available)
+                    delete_cache(facebook_page_instance.page_id, cache_booking)
 
                     return f"Booking cancelled for fb_id {fb_id} on row {i}."
 

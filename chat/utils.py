@@ -69,8 +69,9 @@ def summarizer(user_profile):
                 "content": (
                     "You are an assistant summarizer. Your task is to combine new chat data with an existing summary, focusing solely on retaining important user information unrelated to business transactions. "
                     "Exclude all business-related data, such as sales, inventory, transactions, additions, updates, or deletions, as these are tracked separately in Google Sheets. "
+                    "Never save any item on summary included in inventory or not. "
                     "Preserve only personal user details and interactions, removing any business information to ensure the summary is concise. "
-                    "Ensure the capture of all critical non-business related user information."
+                    "Ensure the capture of all critical non-business related user information. "
                 )
             },
             {"role": "user", "content": f"Existing Summary: {existing_summary}"},
