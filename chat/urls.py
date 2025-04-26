@@ -1,4 +1,6 @@
 from django.urls import path
+
+from chat.api_views import ChatHistoryAPIView
 from .views import cron_sheet_cleaner, function_tester, index, my_cron_view, save_facebook_chat, chat_test_page
 
 urlpatterns = [
@@ -8,4 +10,7 @@ urlpatterns = [
     path('cron-sheet-cleaner/', cron_sheet_cleaner, name='cron_sheet_cleaner'),
     path('test-chat/', chat_test_page, name='test_chat_page'),
     path('functest/', function_tester, name='function_tester'),
+
+    # API
+    path('chat/history/', ChatHistoryAPIView.as_view(), name='chat-history'),
 ]

@@ -13,7 +13,6 @@ class FacebookPage(models.Model):
     is_inventory = models.BooleanField(default=True)
     is_pos = models.BooleanField(default=True)
     is_leads = models.BooleanField(default=True)
-    is_scheduling = models.BooleanField(default=True)
     is_online_selling = models.BooleanField(default=True)
     is_scheduling = models.BooleanField(default=True)
 
