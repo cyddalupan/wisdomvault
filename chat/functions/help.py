@@ -28,11 +28,9 @@ def tool_function(tool_calls, user_profile):
         arguments = tool_call.function.arguments
         arguments_dict = json.loads(arguments)
 
-        print("### Function", function_name)
         if function_name == "ask_manager_help":
             question = arguments_dict.get('question')
-            print("### Function question", question)
-
+            
             # Save the question into the Help model
             help_entry = Help.objects.create(
                 page_id=user_profile.page_id,

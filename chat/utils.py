@@ -51,7 +51,6 @@ def summarizer(user_profile):
     try:
         # Fetch all unsummarized chats for the user
         unsummarized_chats = Chat.objects.filter(user=user_profile, is_summarized=False)
-        print("### unsummarized_chats", unsummarized_chats)
         if not unsummarized_chats.exists():
             print(f"No unsummarized chats found for user with Facebook ID: {user_profile.name}")
             return None
@@ -173,7 +172,6 @@ def escalate_normal(legacy):
     # Insert the new message at the start of the legacy list
     tmp_legacy.insert(0, message)
 
-    print("### ESCALATE MODIFIED LEGACY:", tmp_legacy)
     # Escalate normal chat
     completion = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -200,8 +198,6 @@ def escalate_bad(legacy, tools):
     # Insert the new message at the start of the legacy list
     tmp_legacy.insert(0, message)
     
-    print("### BOSS MESSAGE:", tmp_legacy)
-
     # Escalate normal chat
     completion = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -249,7 +245,6 @@ def escalate_master(legacy, tools, call1, call2):
         temperature=0,
         tools=tools
     )
-    print("### escalate master result", completion)
     return completion
 
 

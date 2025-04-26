@@ -42,8 +42,6 @@ def get_business_info(facebook_page_instance):
         info = cached_data['data'].get('info', "")
         additional_info = cached_data['data'].get('additional_info', "")
         after_leads = cached_data['data'].get('after_leads', "")
-
-    print("after_leads", after_leads)
     
     return info, additional_info, after_leads
 
