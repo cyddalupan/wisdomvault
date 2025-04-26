@@ -135,7 +135,7 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
                 send_message(latest_help.fb_id, answer_to_customer, facebook_page_instance)
 
                 # Update additional info
-                info, additional_info = get_business_info(facebook_page_instance)
+                info, additional_info, after_leads = get_business_info(facebook_page_instance)
                 additional_info = additional_info
                 last_question = latest_help.question
                 last_answer = answer

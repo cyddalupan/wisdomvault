@@ -21,7 +21,7 @@ def get_business_info(facebook_page_instance):
                 service = get_service()
                 result = service.spreadsheets().values().get(
                     spreadsheetId=sheet_id,
-                    range="Settings!B2:B3:B4"
+                    range="Settings!B2:B4"
                 ).execute()
                 
                 values = result.get('values', [])
@@ -42,6 +42,8 @@ def get_business_info(facebook_page_instance):
         info = cached_data['data'].get('info', "")
         additional_info = cached_data['data'].get('additional_info', "")
         after_leads = cached_data['data'].get('after_leads', "")
+
+    print("after_leads", after_leads)
     
     return info, additional_info, after_leads
 

@@ -81,7 +81,7 @@ def save_user_info(tool_calls, user_profile, facebook_page_instance):
 
                     print("User information saved successfully.")
                     
-                    _, _, after_leads = get_business_info(facebook_page_instance)
+                    info, additional_info, after_leads = get_business_info(facebook_page_instance)
                     return after_leads
 
                 except Exception as e:
