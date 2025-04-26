@@ -21,21 +21,27 @@ def get_business_info(facebook_page_instance):
                 service = get_service()
                 result = service.spreadsheets().values().get(
                     spreadsheetId=sheet_id,
-                    range="Settings!B2:B3"
+                    range="Settings!B2:B3:B4"
                 ).execute()
                 
                 values = result.get('values', [])
-                info = values[0][0] if len(values) > 0 and len(values[0]) > 0 else "No business information provided."
-                additional_info = values[1][0] if len(values) > 1 and len(values[1]) > 0 else "No additional information provided."
+                info = values[0][0] if len(values) > 0 and len(values[0]) > 0 else ""
+                additional_info = values[1][0] if len(values) > 1 and len(values[1]) > 0 else ""
+                after_leads = values[2][0] if len(values) > 2 and len(values[2]) > 0 else ""
                 
                 # Optionally cache the new values if necessary
-                update_cache(page_id, cache_type, {'info': info, 'additional_info': additional_info})
+                update_cache(page_id, cache_type, {
+                    'info': info,
+                    'additional_info': additional_info,
+                    'after_leads': after_leads
+                })
 
             except Exception as e:
                 return "Error fetching settings data: {}".format(e)
     else:
-        info = cached_data['data'].get('info', "No business information provided.")
-        additional_info = cached_data['data'].get('additional_info', "No additional information provided.")
+        info = cached_data['data'].get('info', "")
+        additional_info = cached_data['data'].get('additional_info', "")
+        after_leads = cached_data['data'].get('after_leads', "")
     
     return info, additional_info
 
@@ -80,7 +86,7 @@ def instruction(facebook_page_instance, target_row=None):
         print("Using cached data...")
 
     
-    info, additional_info = get_business_info(facebook_page_instance)
+    info, additional_info, after_leads = get_business_info(facebook_page_instance)
     business_info = info or "No business information provided."
     additional_info = additional_info or "No additional information provided."
     inventory = get_cache(page_id, cache_type)['data']

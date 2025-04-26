@@ -1,5 +1,6 @@
 import json
 
+from chat.functions.customer import get_business_info
 from chat.service import get_service
 
 def instruction():
@@ -79,7 +80,9 @@ def save_user_info(tool_calls, user_profile, facebook_page_instance):
                     user_profile.save()
 
                     print("User information saved successfully.")
-                    return "Salamat. ano pa ang matutulong ko sayo?"
+                    
+                    _, _, after_leads = get_business_info(facebook_page_instance)
+                    return after_leads
 
                 except Exception as e:
                     print(f"Error saving user information: {e}")

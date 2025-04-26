@@ -11,6 +11,7 @@ from chat.functions import analyze, handle_image, inventory, leads, other, sched
 from chat.functions.categorizer import getCategory, topic_description
 from chat.functions.cron_sheet_cleaner import process_sales
 from chat.functions.get_name import bypass_get_name
+from chat.functions.sendsms import send_sms
 from chat.task_queue import enqueue_task
 from chat.toolcall import trigger_tool_calls
 from page.models import FacebookPage
@@ -326,8 +327,10 @@ def chat_test_page(request):
 
 
 def function_tester(request):
-    facebook_page_instance = FacebookPage.objects.get(page_id="123456789")
-    bookings = schedule_admin.latest_data(facebook_page_instance)
+    result = send_sms("09626956796", "Good Morning", "")
+    print(result)
+    # facebook_page_instance = FacebookPage.objects.get(page_id="123456789")
+    # bookings = schedule_admin.latest_data(facebook_page_instance)
     
-    # Return a simple HTTP response to confirm it worked
-    return HttpResponse("Inventory setup function executed successfully.")
+    # # Return a simple HTTP response to confirm it worked
+    return HttpResponse("Test Done.")
