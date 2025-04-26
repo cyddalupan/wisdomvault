@@ -43,7 +43,7 @@ def get_business_info(facebook_page_instance):
         additional_info = cached_data['data'].get('additional_info', "")
         after_leads = cached_data['data'].get('after_leads', "")
     
-    return info, additional_info
+    return info, additional_info, after_leads
 
 def instruction(facebook_page_instance, target_row=None):
     # Check if the cached data is older than 20 seconds
