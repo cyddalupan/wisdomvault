@@ -226,7 +226,7 @@ def process_ai_response(user_profile, facebook_page_instance, first_run):
     # Attempt to generate a completion using the OpenAI API
     try:
         completion = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1-nano",
             messages=messages,
             temperature=1,
             tools=tools

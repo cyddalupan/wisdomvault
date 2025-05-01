@@ -189,7 +189,7 @@ def perform_learn_hub(self, text, user_profile, course):
 
     try:
         completion = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1-nano",
             messages=messages,
         )
         ai_reply = completion.choices[0].message.content

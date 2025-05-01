@@ -109,7 +109,7 @@ def getCategory(user_profile, chat_history, facebook_page):
     # print("CATEGORY MESSAGE:", messages)
     # print("CATEGORY TOOL", tools)
     completion = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-nano",
         messages=messages,
         temperature=0,
         tools=tools

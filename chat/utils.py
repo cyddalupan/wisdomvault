@@ -79,7 +79,7 @@ def summarizer(user_profile):
 
         # Request a completion from the model
         completion = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1-nano",
             messages=messages,
             temperature=0,
         )
@@ -143,7 +143,7 @@ def summarize_sales(facebook_page_instance):
             ]
             
             completion = client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4.1-nano",
                 messages=messages,
                 temperature=0,
             )
@@ -174,7 +174,7 @@ def escalate_normal(legacy):
 
     # Escalate normal chat
     completion = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-nano",
         messages=tmp_legacy,
         temperature=0.1,
     )
@@ -200,9 +200,8 @@ def escalate_bad(legacy, tools):
     
     # Escalate normal chat
     completion = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="o4-mini",
         messages=tmp_legacy,
-        temperature=0,
         tools=tools
     )
     return completion
@@ -212,7 +211,7 @@ def escalate_function(legacy, tools):
 
     # Escalate normal chat
     completion = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-nano",
         messages=tmp_legacy,
         temperature=0.2,
         tools=tools
@@ -240,9 +239,8 @@ def escalate_master(legacy, tools, call1, call2):
 
     # Escalate normal chat
     completion = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="o4-mini",
         messages=tmp_legacy,
-        temperature=0,
         tools=tools
     )
     return completion
