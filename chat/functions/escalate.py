@@ -166,7 +166,6 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
                     completion = client.chat.completions.create(
                         model="o4-mini",
                         messages=messages,
-                        temperature=0,
                     )
                     save_additional_info(facebook_page_instance, completion.choices[0].message.content)
                     facebook_page_instance.save()

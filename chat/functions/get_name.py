@@ -50,7 +50,6 @@ def bypass_get_name(chat_history, user_profile):
     completion = client.chat.completions.create(
         model="o4-mini",
         messages=messages,
-        temperature=0,
         tools=tools
     )
     
