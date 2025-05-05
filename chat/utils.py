@@ -174,7 +174,7 @@ def escalate_normal(legacy):
 
     # Escalate normal chat
     completion = client.chat.completions.create(
-        model="gpt-4.1-nano",
+        model="gpt-4.1-mini",
         messages=tmp_legacy,
         temperature=0.1,
     )
@@ -211,7 +211,7 @@ def escalate_function(legacy, tools):
 
     # Escalate normal chat
     completion = client.chat.completions.create(
-        model="gpt-4.1-nano",
+        model="gpt-4.1-mini",
         messages=tmp_legacy,
         temperature=0.2,
         tools=tools
