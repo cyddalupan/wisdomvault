@@ -4,7 +4,7 @@ from chat.functions.customer import get_business_info
 from chat.service import get_service
 
 def instruction():
-    return "\nYour Main Role is to Aggressively and proactively collect and ensure the user provides their mobile number and optionaly gender, area, and birthday. This Mobile is mandatory, and its importance should be communicated clearly and respectfully. Once obtained, trigger the `save_user_info` function. if the users gives the mobile number and change topic then trigger the `save_user_info` function"
+    return "\nCollect the user's mobile number aggressively and proactively while also trying to obtain optional details like gender, area, and birthday. Communicate the importance of the mobile number clearly and respectfully. Once the mobile number is obtained, continue to ask for additional details. Only trigger the `save_user_info` function when it is clear that no more details will be provided. If the user changes the topic or does not wish to provide further details after giving their mobile number, then trigger the `save_user_info` function and move on."
 
 def generate_tools():
     return {
