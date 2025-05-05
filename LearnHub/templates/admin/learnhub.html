@@ -1,68 +1,93 @@
 {% extends "admin/base_site.html" %}
-
 {% load crispy_forms_tags %}
 
 {% block content %}
 <style>
-  img {
-    width: 90%;
-    padding: 5%;
+  /* Make any images in the AI response scale nicely */
+  .card-body img {
+    max-width: 100%;
+    height: auto;
+    border-radius: .25rem;
   }
 </style>
-<div class="container">
-  <div>
-    <strong>Overall Progress:</strong>
-    <div class="progress mt-3">
-      <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar"
-        style="width: {{ overall_score }}%;" aria-valuenow="{{ overall_score }}" aria-valuemin="0" aria-valuemax="100">
-        {{ overall_score }}% Complete
+
+<div class="container my-5">
+
+  <!-- Progress Bars in Cards -->
+  <div class="row g-4 mb-5">
+    <div class="col-md-6">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h6 class="card-subtitle mb-2 text-muted">Overall Progress</h6>
+          <div class="progress">
+            <div class="progress-bar bg-success" role="progressbar"
+                 style="width: {{ overall_score }}%;"
+                 aria-valuenow="{{ overall_score }}" aria-valuemin="0" aria-valuemax="100">
+              {{ overall_score }}%
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h6 class="card-subtitle mb-2 text-muted">Topic Progress</h6>
+          <div class="progress">
+            <div class="progress-bar bg-info" role="progressbar"
+                 style="width: {{ topic_score }}%;"
+                 aria-valuenow="{{ topic_score }}" aria-valuemin="0" aria-valuemax="100">
+              {{ topic_score }}%
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-  <br />
-  <div>
-    <strong>Topic Progress:</strong>
-    <div class="progress mt-3">
-      <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar"
-        style="width: {{ topic_score }}%;" aria-valuenow="{{ topic_score }}" aria-valuemin="0" aria-valuemax="100">
-        {{ topic_score }}% Complete
+
+  <!-- Page Title -->
+  <h1 class="display-5 text-center text-success mb-5">LearnHub</h1>
+
+  <!-- Main Content Row -->
+  <div class="row gx-4">
+
+    <!-- AI Response Column -->
+    <div class="col-lg-8 mb-4">
+      <div class="card h-100 border-success shadow-sm">
+        <div class="card-header bg-success text-white">
+          <strong>Kenshi</strong>
+        </div>
+        <div class="card-body">
+          {% if ai_response_html %}
+            {{ ai_response_html|safe }}
+          {% else %}
+            <p class="text-muted">Ready ka na mag-simula o mag-patuloy sa lesson natin?</p>
+          {% endif %}
+        </div>
       </div>
     </div>
-  </div>
 
-  <h1 class="mt-4">LearnHub</h1>
-
-  <!-- AI Response Section -->
-  {% if ai_response %}
-  <div class="w-100 mb-3 p-3 border rounded bg-light">
-    <h2 class="border-bottom pb-2 border-success">KENSHI</h2>
-    <p>{{ ai_response }}</p>
-  </div>
-  {% else %}
-  <div class="w-100 mb-3 p-3 border rounded bg-light">
-    <h2 class="border-bottom pb-2 border-success">KENSHI</h2>
-    <p>Ready ka na Mag simula o magpatuloy sa lesson natin?</p>
-  </div>
-  {% endif %}
-
-  <!-- Student Form Section -->
-  <div class="w-100 p-3 border rounded bg-white">
-    <h2 class="border-bottom pb-2 border-success">Student</h2>
-    <form method="post" class="mt-3">
-      {% csrf_token %}
-      {% if form %}
-      <div class="row align-items-end">
-        <div class="col-md-9">
-          {{ form|crispy }}
+    <!-- Student Form Column -->
+    <div class="col-lg-4 mb-4">
+      <div class="card h-100 border-success shadow-sm">
+        <div class="card-header bg-success text-white">
+          <strong>Student</strong>
         </div>
-        <div class="col-md-3 text-end">
-          <button type="submit" class="btn btn-success w-100">Submit</button>
+        <div class="card-body d-flex flex-column">
+          <form method="post" class="flex-fill d-flex flex-column">
+            {% csrf_token %}
+            {% if form %}
+              {{ form|crispy }}
+              <button type="submit" class="btn btn-success mt-3 w-100">Submit</button>
+            {% else %}
+              <p class="text-muted">Form is not available</p>
+            {% endif %}
+          </form>
         </div>
       </div>
-      {% else %}
-      <p>Form is not available</p>
-      {% endif %}
-    </form>
-  </div>
-</div>
+    </div>
+
+  </div><!-- /.row -->
+
+</div><!-- /.container -->
 {% endblock %}

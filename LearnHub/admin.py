@@ -18,128 +18,132 @@ client = OpenAI()
 def learn_hub(self, request, course):
     user_profile = request.user
     form = LearnHubForm(request.POST or None)
-    ai_response = ''
+    ai_response_html = ''
     latest_learn_hub = None
     user_progress = None
-    message = ""
     topic_score = 0
     overall_score = 1
-    
-    # Get all lesson from the course
+
+    # Fetch lessons & progress
     lessons = Lesson.objects.filter(course=course).order_by('order')
     total_lessons = lessons.count()
-    user_progress = LessonProgress.objects.filter(user=user_profile, course=course).first()
-    
-    current_lesson_order = user_progress.lesson.order if user_progress and user_progress.lesson and hasattr(user_progress.lesson, 'order') else 0
+    user_progress = LessonProgress.objects.filter(
+        user=user_profile, course=course
+    ).first()
+
+    current_order = (
+        user_progress.lesson.order
+        if user_progress and user_progress.lesson and hasattr(user_progress.lesson, 'order')
+        else 0
+    )
     if total_lessons > 0:
-        overall_score = (current_lesson_order / total_lessons) * 95
+        overall_score = (current_order / total_lessons) * 95
 
     learn_hub_instance = form.save(commit=False)
 
     def parse_response(raw_response):
-        """Function to extract message and topic_score from any response string."""
+        """
+        Try to parse the AI’s reply as JSON.  If that fails,
+        fall back to a minimal regex (or just return a default).
+        """
         try:
-            # Strip the response of leading/trailing whitespace
-            raw_response = raw_response.strip()
-            print("raw_response", raw_response)
+            # If it’s bytes, decode it
+            if isinstance(raw_response, bytes):
+                raw_response = raw_response.decode('utf-8')
 
-            # Initialize default values
-            message = 'No message found'
-            topic_score = 0
+            # Strip any surrounding backticks or markdown fences
+            raw_response = raw_response.strip().lstrip('```').rstrip('```').strip()
 
-            # Use regex to extract the message based on fixed delimiters
-            message_match = re.search(r'{"message": "(.*?)",\s*"topic_score":', raw_response, re.DOTALL)
-            print("message_match", message_match)
-            if message_match:
-                message = message_match.group(1)  # Extract the message
+            # Load it as JSON
+            data = json.loads(raw_response)
 
-                # Replace escaped newline and quote characters for readability
-                message = message.replace('\\n', '\n').replace('\\"', '"')
+            # Pull out message and topic_score
+            message = data.get('message', '')
+            topic_score = data.get('topic_score', 0)
 
-            # Try to find the topic score by matching the format
-            topic_score_match = re.search(r'"topic_score":\s*(\d+)', raw_response)
-            if topic_score_match:
-                topic_score = int(topic_score_match.group(1))  # Extract the topic score
+            return {
+                'message': message,
+                'topic_score': topic_score
+            }
 
-            return {'message': message, 'topic_score': topic_score}
-
+        except json.JSONDecodeError as e:
+            # If the AI sometimes returns non-JSON junk,
+            # you can fall back to your old regex or just return a default
+            print(f"JSON decode failed: {e}")
+            # -- minimal regex fallback if you must:
+            m = re.search(r'"message"\s*:\s*"(.*?)"\s*,', raw_response, re.DOTALL)
+            s = re.search(r'"topic_score"\s*:\s*(\d+)', raw_response)
+            return {
+                'message': m.group(1).replace('\\n','\n').replace('\\"','"') if m else 'Parsing error',
+                'topic_score': int(s.group(1)) if s else 0
+            }
         except Exception as e:
-            print(f"An error occurred while parsing: {e}")
+            print(f"Unexpected error in parse_response: {e}")
             return {'message': 'Parsing error', 'topic_score': 0}
 
     if request.method == 'POST' and form.is_valid():
-        # Call the AI function with user input and course details
+        # call the AI
         response_json = perform_learn_hub(
             self, learn_hub_instance.user_input, user_profile, course
-        ) or '{"message": "No response received.", "topic_score": 0}'  # Default response if None
+        ) or '{"message": "No response received.", "topic_score": 0}'
 
-        print("response_json", response_json)
-        # Parse the JSON response string
-        response_data = parse_response(response_json)
+        rd = parse_response(response_json)
+        message = rd['message']
+        topic_score = float(rd['topic_score'])
 
-        # Extract json
-        message = response_data.get('message', '')
-        topic_score = response_data.get('topic_score', 0)
-
-        # Ensure topic_score is treated as a number
-        topic_score = float(topic_score) if isinstance(topic_score, str) else topic_score
-
-        # Update user progress based on topic_score
-        if topic_score >= 95 and (user_progress and not user_progress.completed):
-            next_lesson = lessons.filter(order__gt=user_progress.lesson.order).first()
-            if next_lesson:
-                user_progress.lesson = next_lesson
+        # advance the lesson if they scored ≥95
+        if topic_score >= 95 and user_progress and not user_progress.completed:
+            nxt = lessons.filter(order__gt=user_progress.lesson.order).first()
+            if nxt:
+                user_progress.lesson = nxt
                 user_progress.completed = False
             else:
                 user_progress.completed = True
             user_progress.save()
 
-        # Store the message
+        # **treat AI message as HTML directly**
         learn_hub_instance.ai_response = message
-
-        # Save the instance
+        learn_hub_instance.ai_response_html = message  # no markdown conversion
         learn_hub_instance.save()
 
-        # Use formatted output for rendering
-        ai_response = learn_hub_instance.formatted_output
+        ai_response_html = message
+
     else:
-        # Load the latest digital marketing instance for display if it exists
+        # on GET, show last saved chat if present
         if DigitalMarketing.objects.exists():
             latest_learn_hub = DigitalMarketing.objects.latest('id')
             if user_progress:
-                last_chat = ChatHistory.objects.filter(user=user_profile, lesson=user_progress.lesson).order_by('-timestamp').first()
-                if last_chat:
-                    # Using the same parsing logic for last_chat.reply
-                    response_data = parse_response(last_chat.reply)
-
-                    # Extract and store values
-                    message = response_data.get('message', '')
+                last = ChatHistory.objects.filter(
+                    user=user_profile, lesson=user_progress.lesson
+                ).order_by('-timestamp').first()
+                if last:
+                    rd = parse_response(last.reply)
+                    message = rd['message']
                     learn_hub_instance.ai_response = message
-                    ai_response = learn_hub_instance.formatted_output
+                    learn_hub_instance.ai_response_html = message
+                    ai_response_html = message
 
-    # Empty input text value
+    # reset form
     form = LearnHubForm()
 
-    # Pass context to the template
-    context = dict(
-        self.admin_site.each_context(request),
-        form=form,
-        ai_response=ai_response,
-        topic_score=round(topic_score),
-        overall_score=round(overall_score),
-        latest_learn_hub=latest_learn_hub,
-    )
-    
-    # Print done when done
+    # build context
+    context = {
+        **self.admin_site.each_context(request),
+        'form': form,
+        'ai_response_html': ai_response_html,
+        'topic_score': round(topic_score),
+        'overall_score': round(overall_score),
+        'latest_learn_hub': latest_learn_hub,
+    }
+
+    # if course complete, override with congratulations
     if user_progress and user_progress.completed:
-        context = dict(
-            self.admin_site.each_context(request),
-            form=form,
-            ai_response="Congratulations",
-            topic_score=100,
-            overall_score=100,
-            latest_learn_hub=latest_learn_hub,
-        )
+        context.update({
+            'ai_response_html': '<h2>Congratulations!</h2><p>You have completed this course.</p>',
+            'topic_score': 100,
+            'overall_score': 100,
+        })
+
     return render(request, "admin/learnhub.html", context)
 
 def perform_learn_hub(self, text, user_profile, course):
@@ -165,17 +169,43 @@ def perform_learn_hub(self, text, user_profile, course):
         {
             "role": "system", 
             "content": (
-                "You are an API that always returns a JSON object. "
-                "The format must strictly adhere to: "
-                '{"message": "string (can include markdown)", "topic_score": integer (1-100)}. '
-                f"You are a teacher instructing the user about the course: {course}, focusing only on the topic: {lesson.name}. "
-                "Use taglish but depends on the user. "
-                "You gauge user (quiz, essay or code) every 3 conversation to assess the user's understanding. "
-                "Your scoring for topic_score must be strict and ensure there is no cheating. "
-                "topic_score should starts at 1 and move up as the user improves depends on how much user knows. "
-                f"before you give 100 points on topic_score you make sure that the user is expert on the topic: {lesson.name}. "
-                "focus more on guiding the discussion than just asking questions. "
-                "Output only the JSON object without any additional text. "
+                f"Guide users in learning {course}, focusing on the topic: {lesson.name}. "
+                "Mix Taglish and English, adapting to the user's language preference. "
+                "Every third conversation should include a gauging method (quiz, essay, or coding task) to assess understanding. "
+                "Fair and strict evaluation is crucial for honesty and improvement. "
+                "Begin with a topic score of 1, adjusting as the user's performance and knowledge grow, ensuring expertise before reaching a score of 100. "
+                "Your role is to facilitate discussion, not just pose questions.\n\n"
+                "# Steps\n\n"
+                "- Assess the user during every third interaction with an appropriate gauging method.\n"
+                "- Evaluate the user's knowledge strictly to adjust the topic score.\n"
+                "- Use conversation primarily to guide, instruct, and ensure learning progression.\n\n"
+                "# Output Format\n\n"
+                "Produce the output in the following JSON format, containing the HTML Bootstrap message and topic score:\n\n"
+                "```json\n"
+                "{\n"
+                "  \"message\": \"html bootstrap message here.\",\n"
+                "  \"topic_score\": 0\n"
+                "}\n"
+                "```\n\n"
+                "The HTML should include:\n\n"
+                "- **Message**: Paragraphs containing the instructional message. Convert any markdown elements into HTML using Bootstrap.\n"
+                "- **Topic Score**: Include the topic score as a Bootstrap-styled component, such as a progress bar.\n\n"
+                "# Examples\n\n"
+                "Consider using Bootstrap-based elements for your HTML output. Adjust design elements as needed based on scenario specifics. Here's an example:\n\n"
+                "```json\n"
+                "{\n"
+                "  \"message\": \"<div class=\\\"container mt-5\\\"><h3 class=\\\"mb-3\\\">Understanding {lesson.name}</h3>"
+                "<p>We’ve covered key aspects of {lesson.name}: how to define it, its purpose, and common patterns. Keep practicing to deepen your grasp.</p>"
+                "<div class=\\\"progress\\\"><div class=\\\"progress-bar\\\" role=\\\"progressbar\\\" style=\\\"width: 30%;\\\""
+                " aria-valuenow=\\\"30\\\" aria-valuemin=\\\"0\\\" aria-valuemax=\\\"100\\\">30%</div></div></div>\",\n"
+                "  \"topic_score\": 30\n"
+                "}\n"
+                "```\n\n"
+                "# Notes\n\n"
+                "- Ensure the HTML elements use Bootstrap for styling.\n"
+                "- Keep communication engaging and supportive.\n"
+                "- Do not limit the output; allow for design adjustments depending on scenarios.\n"
+                "- This is an api so Ensure the output format is {'message': 'html bootstrap here', 'topic_score': <score here>}.\n"
                 + (f"Additional topic information: {lesson.description}. " if lesson.description else "")
             )
         },
@@ -189,7 +219,7 @@ def perform_learn_hub(self, text, user_profile, course):
 
     try:
         completion = client.chat.completions.create(
-            model="gpt-4.1-nano",
+            model="o4-mini",
             messages=messages,
         )
         ai_reply = completion.choices[0].message.content
