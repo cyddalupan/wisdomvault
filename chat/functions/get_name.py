@@ -48,7 +48,7 @@ def bypass_get_name(chat_history, user_profile):
     # print("CATEGORY MESSAGE:", messages)
     # print("CATEGORY TOOL", tools)
     completion = client.chat.completions.create(
-        model="gpt-4.1-nano",
+        model="o4-mini",
         messages=messages,
         temperature=0,
         tools=tools

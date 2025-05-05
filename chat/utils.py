@@ -79,9 +79,8 @@ def summarizer(user_profile):
 
         # Request a completion from the model
         completion = client.chat.completions.create(
-            model="gpt-4.1-nano",
+            model="o4-mini",
             messages=messages,
-            temperature=0,
         )
 
         # Extract the summarized text
@@ -143,9 +142,8 @@ def summarize_sales(facebook_page_instance):
             ]
             
             completion = client.chat.completions.create(
-                model="gpt-4.1-nano",
+                model="o4-mini",
                 messages=messages,
-                temperature=0,
             )
 
             summarized_text = completion.choices[0].message.content

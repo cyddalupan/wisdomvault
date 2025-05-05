@@ -226,9 +226,8 @@ def process_ai_response(user_profile, facebook_page_instance, first_run):
     # Attempt to generate a completion using the OpenAI API
     try:
         completion = client.chat.completions.create(
-            model="gpt-4.1-nano",
+            model="o4-mini",
             messages=messages,
-            temperature=1,
             tools=tools
         )
         response_content = completion.choices[0].message.content
@@ -236,18 +235,18 @@ def process_ai_response(user_profile, facebook_page_instance, first_run):
         # Handle tool calls if present
         tool_calls = completion.choices[0].message.tool_calls or []
         if tool_calls:
-            completion2 = escalate_function(messages, tools)
-            tool_calls2 = completion2.choices[0].message.tool_calls or []
+            # completion2 = escalate_function(messages, tools)
+            # tool_calls2 = completion2.choices[0].message.tool_calls or []
             
-            try:
-                if not tool_calls2 or (tool_calls[0].function != tool_calls2[0].function):            
-                    completion = escalate_master(messages, tools, tool_calls[0].function, tool_calls2[0].function)
-                    response_content = completion.choices[0].message.content
-                    # Handle tool calls if present
-                    tool_calls = completion.choices[0].message.tool_calls
-            except (IndexError, AttributeError):
-                # Handle the case where the list is empty or the attribute is missing
-                pass
+            # try:
+            #     if not tool_calls2 or (tool_calls[0].function != tool_calls2[0].function):            
+            #         completion = escalate_master(messages, tools, tool_calls[0].function, tool_calls2[0].function)
+            #         response_content = completion.choices[0].message.content
+            #         # Handle tool calls if present
+            #         tool_calls = completion.choices[0].message.tool_calls
+            # except (IndexError, AttributeError):
+            #     # Handle the case where the list is empty or the attribute is missing
+            #     pass
             if tool_calls:
                 triggered_function = True
                 response_content = trigger_tool_calls(first_run, tool_calls, user_profile, facebook_page_instance, tool_function)
@@ -256,15 +255,15 @@ def process_ai_response(user_profile, facebook_page_instance, first_run):
                 "role": "assistant",
                 "content": response_content
             })
-            escalate_result = escalate_normal(messages)
-            if escalate_result == "BAD":
-                completion = escalate_bad(messages, tools)
-                response_content = completion.choices[0].message.content
+            # escalate_result = escalate_normal(messages)
+            # if escalate_result == "BAD":
+            #     completion = escalate_bad(messages, tools)
+            #     response_content = completion.choices[0].message.content
 
-                # Handle tool calls if present
-                tool_calls = completion.choices[0].message.tool_calls
-                if tool_calls:
-                    response_content = trigger_tool_calls(first_run, tool_calls, user_profile, facebook_page_instance, tool_function)
+            #     # Handle tool calls if present
+            #     tool_calls = completion.choices[0].message.tool_calls
+            #     if tool_calls:
+            #         response_content = trigger_tool_calls(first_run, tool_calls, user_profile, facebook_page_instance, tool_function)
             if not response_content and first_run:
                 # Retry the process if tool function fails during the first run
                 response_content, triggered_function = process_ai_response(user_profile, facebook_page_instance, False)
