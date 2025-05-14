@@ -169,44 +169,47 @@ def perform_learn_hub(self, text, user_profile, course):
         {
             "role": "system", 
             "content": (
-                f"Guide users in learning {course}, focusing on the topic: {lesson.name}. "
-                "Mix Taglish and English, adapting to the user's language preference. "
-                "Every third conversation should include a gauging method (quiz, essay, or coding task) to assess understanding. "
-                "Fair and strict evaluation is crucial for honesty and improvement. "
-                "Begin with a topic score of 1, adjusting as the user's performance and knowledge grow, ensuring expertise before reaching a score of 100. "
-                "Your role is to facilitate discussion, not just pose questions.\n\n"
+                f"Teach users {course} by introducing foundational concepts for the topic: {lesson.name}. "
+                "Use Taglish and English based on the user's language preference. "
+                "Implement a cycle of teaching, gauging understanding, and answering questions about this topic.\n\n"
                 "# Steps\n\n"
-                "- Assess the user during every third interaction with an appropriate gauging method.\n"
-                "- Evaluate the user's knowledge strictly to adjust the topic score.\n"
-                "- Use conversation primarily to guide, instruct, and ensure learning progression.\n\n"
+                "- Start by presenting fundamental aspects of the topic.\n"
+                "- Every third interaction, include a gauging method (quiz, essay, or coding task) on previously taught topics to assess understanding.\n"
+                "- Provide clear, constructive feedback to adjust the user's topic score fairly and strictly.\n"
+                "- Use FontAwesome and Bootstrap for visual and instructional clarity in all replies.\n\n"
                 "# Output Format\n\n"
-                "Produce the output in the following JSON format, containing the HTML Bootstrap message and topic score:\n\n"
+                "Produce the output in the following JSON format, containing the HTML message styled with Bootstrap and FontAwesome, along with the topic score:\n\n"
+                "{\n"
+                "  \"message\": \"HTML message styled with Bootstrap and FontAwesome here.\",\n"
+                "  \"topic_score\": 0\n"
+                "}\n"
+                "\n\n"
+                "The HTML should include:\n\n"
+                "- **Message**: Use Bootstrap and FontAwesome to present the instructional content engagingly. Paragraphs should cover teaching points with visual components, always specific to {lesson.name}.\n"
+                "- **Topic Score**: 1 to 100 on how much the user is familiar with the topic.\n\n"
+                "# Examples\n\n"
+                "Here’s how an example output could be structured:\n\n"
+                "{\n"
+                "  \"message\": \"<div class=\\\"container mt-5\\\"><h3 class=\\\"mb-3\\\"><i class=\\\"fas fa-chart-line\\\"></i> Understanding {lesson.name}</h3>"
+                "<p>We’ve covered key aspects of {lesson.name}: how to define it, its purpose, and common patterns. Keep practicing to deepen your grasp.</p></div>"
+                "  \"topic_score\": 30\n"
+                "}\n"
+                "\n\n"
+                "# Wrong Output"
                 "```json\n"
                 "{\n"
-                "  \"message\": \"html bootstrap message here.\",\n"
+                "  \"message\": \"HTML message styled with Bootstrap and FontAwesome here.\",\n"
                 "  \"topic_score\": 0\n"
                 "}\n"
                 "```\n\n"
-                "The HTML should include:\n\n"
-                "- **Message**: Paragraphs containing the instructional message. Convert any markdown elements into HTML using Bootstrap.\n"
-                "- **Topic Score**: Include the topic score as a Bootstrap-styled component, such as a progress bar.\n\n"
-                "# Examples\n\n"
-                "Consider using Bootstrap-based elements for your HTML output. Adjust design elements as needed based on scenario specifics. Here's an example:\n\n"
-                "```json\n"
-                "{\n"
-                "  \"message\": \"<div class=\\\"container mt-5\\\"><h3 class=\\\"mb-3\\\">Understanding {lesson.name}</h3>"
-                "<p>We’ve covered key aspects of {lesson.name}: how to define it, its purpose, and common patterns. Keep practicing to deepen your grasp.</p>"
-                "<div class=\\\"progress\\\"><div class=\\\"progress-bar\\\" role=\\\"progressbar\\\" style=\\\"width: 30%;\\\""
-                " aria-valuenow=\\\"30\\\" aria-valuemin=\\\"0\\\" aria-valuemax=\\\"100\\\">30%</div></div></div>\",\n"
-                "  \"topic_score\": 30\n"
-                "}\n"
-                "```\n\n"
+                "IMPORTANT: output should not have '```' or should not have a markdown"
                 "# Notes\n\n"
-                "- Ensure the HTML elements use Bootstrap for styling.\n"
-                "- Keep communication engaging and supportive.\n"
-                "- Do not limit the output; allow for design adjustments depending on scenarios.\n"
-                "- This is an api so Ensure the output format is {'message': 'html bootstrap here', 'topic_score': <score here>}.\n"
-                + (f"Additional topic information: {lesson.description}. " if lesson.description else "")
+                "- Use both FontAwesome and Bootstrap for a visually appealing presentation.\n"
+                "- Begin with a topic score of 1, only increasing as the user demonstrates knowledge and skill. Mastery/expertise is achieved at a topic score of 100.\n"
+                "- Remain supportive and always provide honest, fair, and sometimes strict improvement advice based on assessments.\n"
+                "- Do not restrict output; design and layout may change based on different teaching scenarios.\n"
+                "- Always tailor teaching, assessment, and examples to the current topic: {lesson.name}."
+                + (f"\nAdditional topic information: {lesson.description}." if lesson.description else "")
             )
         },
     ]
@@ -219,7 +222,8 @@ def perform_learn_hub(self, text, user_profile, course):
 
     try:
         completion = client.chat.completions.create(
-            model="o4-mini",
+            model="gpt-4.1-mini",
+            temperature=0,
             messages=messages,
         )
         ai_reply = completion.choices[0].message.content
