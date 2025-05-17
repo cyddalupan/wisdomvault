@@ -5,11 +5,20 @@ from google.oauth2 import service_account
 import time
 from datetime import datetime
 
+from chat.cache import get_cache, update_cache
 from chat.service import get_service
 from chat.utils import summarize_sales, summarizer
 
+cache_admin_sched = "admin_sched"
+
 def instruction(facebook_page_instance): 
-    latest_schedules = latest_data(facebook_page_instance)  # Get the latest schedule data
+    
+    current_time = time.time()
+    page_id = facebook_page_instance.page_id
+    cached_data = get_cache(page_id, cache_admin_sched)
+    if current_time - cached_data['timestamp'] > 40:
+        cached_data = update_cache(page_id, cache_admin_sched, latest_data(facebook_page_instance))
+    latest_schedules = cached_data['data']
 
     if "No data found" in latest_schedules:
         return "No schedule data available at this time."
