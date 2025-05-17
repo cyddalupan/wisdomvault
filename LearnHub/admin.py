@@ -162,7 +162,7 @@ def perform_learn_hub(self, text, user_profile, course):
         lesson=lesson,
         message=text,
         reply='')
-    chat_history = ChatHistory.objects.filter(user=user_profile, lesson=lesson).order_by('-timestamp')[:20]
+    chat_history = ChatHistory.objects.filter(user=user_profile, lesson=lesson).order_by('-timestamp')[:10]
     chat_history = list(chat_history)[::-1]
 
     messages = [

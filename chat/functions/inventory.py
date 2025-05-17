@@ -48,7 +48,9 @@ def instruction(facebook_page_instance, target_row=None):
 
     else:
         print("Using cached data...")
-
+        
+    sales_summary = facebook_page_instance.sales
+    
     return (
         "Manage users inventory. "
         "IMPORTANT: The Google Sheet is the sole source of truth regarding inventory data. "
@@ -57,6 +59,7 @@ def instruction(facebook_page_instance, target_row=None):
         "IMPORTANT: You are talking to the user which is the business owner, The user(owner) is selling and not buying and we will record what user sells. "
         f"Please review the products and total cost, and confirm if you'd like to proceed with the sale."
         "Do not sell if stocks is not enough."
+        f"Summary of recent transactions: {sales_summary}"
     )
 
 def generate_tools():

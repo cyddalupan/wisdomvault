@@ -109,7 +109,7 @@ def summarize_sales(facebook_page_instance):
             # Read the data from the "Sales" sheet
             result = service.spreadsheets().values().get(
                 spreadsheetId=sheet_id,
-                range="Orders"
+                range="Daily_Sales"
             ).execute()
 
             sales_message = ""
@@ -152,95 +152,3 @@ def summarize_sales(facebook_page_instance):
         except Exception as e:
             sales_message = f"An error occurred: {str(e)}"
     return None
-
-def escalate_normal(legacy):
-    tmp_legacy = legacy.copy()
-    message = {
-        "role": "system",
-        "content": (
-            "You check if the last assistant reply is ok. just reply 'GOOD' or 'BAD' "
-            "If its ok just reply 'GOOD'"
-            "reply 'BAD' If you think reply is bad, an apology or should have been a function call"
-        ),
-    }
-    
-    if tmp_legacy is None:
-        tmp_legacy = []
-
-    # Insert the new message at the start of the legacy list
-    tmp_legacy.insert(0, message)
-
-    # Escalate normal chat
-    completion = client.chat.completions.create(
-        model="gpt-4.1-mini",
-        messages=tmp_legacy,
-        temperature=0.1,
-    )
-    return completion.choices[0].message.content
-
-def escalate_bad(legacy, tools):
-    tmp_legacy = legacy.copy()
-
-    message = {
-        "role": "system",
-        "content": (
-            "You give a better response or maybe a function call should have been triggered because the system give a bad response. "
-            "the bad response is the last system message and you should change that to a better one. "
-            "consider everything before giving a better response make sure its correct."
-        ),
-    }
-    
-    if tmp_legacy is None:
-        tmp_legacy = []
-
-    # Insert the new message at the start of the legacy list
-    tmp_legacy.insert(0, message)
-    
-    # Escalate normal chat
-    completion = client.chat.completions.create(
-        model="o4-mini",
-        messages=tmp_legacy,
-        tools=tools
-    )
-    return completion
-
-def escalate_function(legacy, tools):
-    tmp_legacy = legacy.copy()
-
-    # Escalate normal chat
-    completion = client.chat.completions.create(
-        model="gpt-4.1-mini",
-        messages=tmp_legacy,
-        temperature=0.2,
-        tools=tools
-    )
-    return completion
-
-def escalate_master(legacy, tools, call1, call2):
-    tmp_legacy = legacy.copy()
-
-    message = {
-    "role": "system",
-        "content": (
-            "Trigger the tool call function with complete accuracy and provide the correct function based on detailed analysis of two sets of parameters from GPT.  Note: Ensure accuracy by analyzing both parameter sets thoroughly before selecting the function call."
-            f"GPT1 suggests: {call1} and GPT2 suggests: {call2}. "
-            "Please carefully evaluate both suggestions and determine the appropriate parameters to use. "
-            "The following messages are the instructions that GPT1 and GPT2 received, so decide wisely."
-        ),
-    }
-    
-    if tmp_legacy is None:
-        tmp_legacy = []
-
-    # Insert the new message at the start of the legacy list
-    tmp_legacy.insert(0, message)
-
-    # Escalate normal chat
-    completion = client.chat.completions.create(
-        model="o4-mini",
-        messages=tmp_legacy,
-        tools=tools
-    )
-    return completion
-
-

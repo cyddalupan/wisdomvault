@@ -1,6 +1,7 @@
 from chat.functions import leads, schedule, help
 
 def trigger_tool_calls(first_run, tool_calls, user_profile, facebook_page_instance, tool_function):
+    print("##TOOLCALLS##", tool_calls)
     if first_run and any(tool_call.function.name == "ask_manager_help" for tool_call in tool_calls):
         response_content = help.tool_function(tool_calls, user_profile)
     elif first_run and any(tool_call.function.name == "save_user_info" for tool_call in tool_calls):

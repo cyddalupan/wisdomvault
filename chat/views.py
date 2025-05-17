@@ -7,8 +7,8 @@ from datetime import timedelta
 from openai import OpenAI
 from django.http import JsonResponse, HttpResponse
 from chat import utils
-from chat.functions import analyze, handle_image, inventory, leads, other, schedule, schedule_admin, customer, help, escalate
-from chat.functions.categorizer import getCategory, topic_description
+from chat.functions import handle_image, inventory, leads, schedule, schedule_admin, customer, help, escalate
+from chat.functions.categorizer import topic_description
 from chat.functions.cron_sheet_cleaner import process_sales
 from chat.functions.get_name import bypass_get_name
 from chat.functions.sendsms import send_sms
@@ -16,7 +16,7 @@ from chat.task_queue import enqueue_task
 from chat.toolcall import trigger_tool_calls
 from page.models import FacebookPage
 from .models import Chat, UserProfile
-from chat.utils import escalate_function, escalate_master, getChatHistory, send_image, send_message, escalate_normal, escalate_bad
+from chat.utils import getChatHistory, send_image, send_message
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
 from dotenv import load_dotenv
@@ -92,12 +92,8 @@ def save_facebook_chat(request):
 def process_ai_response(user_profile, facebook_page_instance, first_run):
     triggered_function = False
     chat_history = getChatHistory(user_profile)
-
-    # Initial empty instruction and tools setup
-    def instruction(facebook_page_instance):
-        return ""
     
-    current_instruction = instruction
+    current_instruction = ""
     tools = []
     tool_function = None
 
@@ -112,33 +108,23 @@ def process_ai_response(user_profile, facebook_page_instance, first_run):
         if get_name_response:
             return get_name_response, False
 
-    # Determine the task and set up instructions, tools, and functions
+    # Admin Logic
     if user_profile.user_type == 'admin':
         # Escalete before anything else
         activeHelp =  escalate.isThereQuestion(facebook_page_instance)
         if activeHelp:
             return escalate.bypass(activeHelp, chat_history, user_profile, facebook_page_instance), False
 
-        getCategory(user_profile, chat_history, facebook_page_instance)
-
-        if user_profile.task == "inventory" or user_profile.task == "sales" :
-            current_instruction = inventory.instruction
+        if facebook_page_instance.is_inventory:
+            current_instruction += inventory.instruction(facebook_page_instance)
             tools = inventory.generate_tools()
             tool_function = inventory.tool_function
-        elif user_profile.task == "other":
-            current_instruction = other.instruction
-            tools = other.generate_tools()
-            tool_function = other.tool_function
-        elif user_profile.task == "analyze":
-            current_instruction = analyze.instruction
-            tools = analyze.generate_tools()
-            tool_function = analyze.tool_function
-        elif user_profile.task == "schedule":
-            current_instruction = schedule_admin.instruction
-            tools = schedule_admin.generate_tools()
-            tool_function = schedule_admin.tool_function
+
+        if facebook_page_instance.is_scheduling:
+            current_instruction += schedule_admin.instruction(facebook_page_instance)
+
     if user_profile.user_type == 'customer':
-        current_instruction = customer.instruction
+        current_instruction += customer.instruction(facebook_page_instance, target_row=None)
         
         if facebook_page_instance.is_online_selling:
             tools = customer.generate_tools()
@@ -159,8 +145,6 @@ def process_ai_response(user_profile, facebook_page_instance, first_run):
 
     # Build AI message with instruction based on task
     if user_profile.user_type == "admin":
-        current_task = user_profile.task.lower()  # Current task from user_profile
-        topic_instruction = current_instruction(facebook_page_instance)  # Get business-related info based on current task
 
         # Prepare the system message dynamically with the current task and topic-specific instructions
         messages = [
@@ -168,11 +152,9 @@ def process_ai_response(user_profile, facebook_page_instance, first_run):
                 "role": "system",
                 "content": (
                     f"Your name is KENSHI short for (Kiosk and Easy Navigation System for Handling Inventory). "
-                    f"Speak in taglish, keep replies short, No markdown just emoji and proper spacing, and focus STRICTLY on the current topic: '{current_task}'. "
+                    f"Speak in taglish, keep replies short, No markdown just emoji and proper spacing. "
                     f"be more casual, use 'po', 'opo', sir or maam. "
-                    f"Full Details of current topic: ({topic_instruction}) "
-                    # List topic informations.
-                    f"{topic_description(facebook_page_instance)}"
+                    f"Full Details of current topic: ({current_instruction}) "
                 )
             }
         ]
@@ -196,7 +178,7 @@ def process_ai_response(user_profile, facebook_page_instance, first_run):
                         "Never apologize instead ask manager using tool function 'ask_manager_help'. "
                         "Under NO circumstances should you assume, invent, or provide information that is not explicitly found in the 'Information' and 'Additional Info'.\n\n"
                     )
-                    + current_instruction(facebook_page_instance)
+                    + current_instruction
                     + (schedule_instruction if not leads_instruction else "")
                 ),
             }
@@ -223,6 +205,8 @@ def process_ai_response(user_profile, facebook_page_instance, first_run):
         tools = tools or []  # Ensure tools is initialized if None
         tools.append(help.generate_tools())
 
+    print("###",messages)
+    print("$$$",tools)
     # Attempt to generate a completion using the OpenAI API
     try:
         completion = client.chat.completions.create(
@@ -235,35 +219,13 @@ def process_ai_response(user_profile, facebook_page_instance, first_run):
         # Handle tool calls if present
         tool_calls = completion.choices[0].message.tool_calls or []
         if tool_calls:
-            # completion2 = escalate_function(messages, tools)
-            # tool_calls2 = completion2.choices[0].message.tool_calls or []
-            
-            # try:
-            #     if not tool_calls2 or (tool_calls[0].function != tool_calls2[0].function):            
-            #         completion = escalate_master(messages, tools, tool_calls[0].function, tool_calls2[0].function)
-            #         response_content = completion.choices[0].message.content
-            #         # Handle tool calls if present
-            #         tool_calls = completion.choices[0].message.tool_calls
-            # except (IndexError, AttributeError):
-            #     # Handle the case where the list is empty or the attribute is missing
-            #     pass
-            if tool_calls:
-                triggered_function = True
-                response_content = trigger_tool_calls(first_run, tool_calls, user_profile, facebook_page_instance, tool_function)
+            triggered_function = True
+            response_content = trigger_tool_calls(first_run, tool_calls, user_profile, facebook_page_instance, tool_function)
         else:
             messages.append({
                 "role": "assistant",
                 "content": response_content
             })
-            # escalate_result = escalate_normal(messages)
-            # if escalate_result == "BAD":
-            #     completion = escalate_bad(messages, tools)
-            #     response_content = completion.choices[0].message.content
-
-            #     # Handle tool calls if present
-            #     tool_calls = completion.choices[0].message.tool_calls
-            #     if tool_calls:
-            #         response_content = trigger_tool_calls(first_run, tool_calls, user_profile, facebook_page_instance, tool_function)
             if not response_content and first_run:
                 # Retry the process if tool function fails during the first run
                 response_content, triggered_function = process_ai_response(user_profile, facebook_page_instance, False)

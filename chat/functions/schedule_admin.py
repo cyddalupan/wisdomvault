@@ -8,7 +8,7 @@ from datetime import datetime
 from chat.service import get_service
 from chat.utils import summarize_sales, summarizer
 
-def instruction(facebook_page_instance, target_row=None): 
+def instruction(facebook_page_instance): 
     latest_schedules = latest_data(facebook_page_instance)  # Get the latest schedule data
 
     if "No data found" in latest_schedules:
@@ -24,13 +24,6 @@ def instruction(facebook_page_instance, target_row=None):
             summary += f"Booked: {line}\n"  # Has bookings (Name and FB_ID present)
 
     return summary + "\nNote that if user wants to customize the schedules tell user to change on the spread sheets"
-
-def generate_tools():
-    return None
-
-
-def tool_function(tool_calls, user_profile, facebook_page_instance):
-    return None
 
 def latest_data(facebook_page_instance):
     print("Fetching latest bookings from Google Sheets...")
@@ -56,7 +49,7 @@ def latest_data(facebook_page_instance):
             latest_data = values[6:]  # All rows excluding headers
 
             # Limit to the latest 100 entries
-            latest_data = latest_data[-100:]
+            latest_data = latest_data[-20:]
 
             for i, row in enumerate(latest_data, start=7):  # Start from 7 to match row number in output
                 available_message += f"Row {i}: {row[2]}, {row[3]} (FB_ID: {row[4] if len(row) > 4 else 'N/A'}, Name: {row[5] if len(row) > 5 else 'N/A'})\n"
