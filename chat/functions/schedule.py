@@ -15,7 +15,7 @@ def read_bookings(facebook_page_instance):
     current_time = time.time()
     page_id = facebook_page_instance.page_id
     cached_data = get_cache(page_id, cache_all)
-    if current_time - cached_data['timestamp'] > 20:
+    if current_time - cached_data['timestamp'] > 55:
         print("Fetching new data from Google Sheets...")
         if facebook_page_instance and getattr(facebook_page_instance, 'sheet_id', None):
             sheet_id = facebook_page_instance.sheet_id
@@ -53,7 +53,7 @@ def available_schedule(facebook_page_instance):
     current_time = time.time()
     page_id = facebook_page_instance.page_id
     cached_data = get_cache(page_id, cache_available)
-    if current_time - cached_data['timestamp'] > 20:
+    if current_time - cached_data['timestamp'] > 50:
         print("Fetching available schedules from Google Sheets...")
         if facebook_page_instance and getattr(facebook_page_instance, 'sheet_id', None):
             sheet_id = facebook_page_instance.sheet_id
@@ -100,7 +100,7 @@ def get_booking_date(facebook_page_instance, fb_id):
     current_time = time.time()
     page_id = facebook_page_instance.page_id
     cached_data = get_cache(page_id, cache_booking)
-    if current_time - cached_data['timestamp'] > 30:
+    if current_time - cached_data['timestamp'] > 60:
         print("Fetching bookings from Google Sheets...")
         if facebook_page_instance and getattr(facebook_page_instance, 'sheet_id', None):
             sheet_id = facebook_page_instance.sheet_id
