@@ -102,12 +102,6 @@ def process_ai_response(user_profile, facebook_page_instance, first_run):
         user_profile.task = "customer"
         user_profile.save()
 
-    # Bypass All to get name
-    if not user_profile.name:
-        get_name_response = bypass_get_name(chat_history, user_profile)
-        if get_name_response:
-            return get_name_response, False
-
     # Admin Logic
     if user_profile.user_type == 'admin':
         # Escalete before anything else
@@ -143,6 +137,13 @@ def process_ai_response(user_profile, facebook_page_instance, first_run):
             if schedule_tool is not None:
                 tools.append(schedule_tool)
 
+    
+    # Bypass All to get name
+    if not user_profile.name:
+        get_name_response = bypass_get_name(chat_history, user_profile, current_instruction)
+        if get_name_response:
+            return get_name_response, False
+
     # Build AI message with instruction based on task
     if user_profile.user_type == "admin":
 
@@ -152,7 +153,7 @@ def process_ai_response(user_profile, facebook_page_instance, first_run):
                 "role": "system",
                 "content": (
                     f"Your name is KENSHI short for (Kiosk and Easy Navigation System for Handling Inventory). "
-                    f"Speak in taglish, keep replies short, No markdown just emoji and proper spacing. "
+                    f"Speak in taglish, keep replies short, No markdown just lots of emoji and proper spacing. "
                     f"be more casual, use 'po', 'opo', sir or maam. "
                     f"Full Details of current topic: ({current_instruction}) "
                 )
@@ -167,7 +168,7 @@ def process_ai_response(user_profile, facebook_page_instance, first_run):
                     leads_instruction
                     + (
                         "Your name is KENSHI short for 'Kiosk and Easy Navigation System for Handling Inventory'. "
-                        "Speak in taglish, keep replies short, No markdown just emoji and proper spacing. "
+                        "Speak in taglish, keep replies short, No markdown just lots emoji and proper spacing. "
                         "Dominate the conversation and avoid asking what user wants, instead suggest what they need. "
                         "be more casual, use 'po', 'opo', sir or maam. know the customer and use emotion to sell. "
                         + ("Your purpose is to assist customers with inquiries about products, promotions, pricing, inventory, and other business-related topics. " if facebook_page_instance.is_inventory else "")

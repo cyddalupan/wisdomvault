@@ -6,17 +6,18 @@ load_dotenv()
 
 client = OpenAI()
 
-def bypass_get_name(chat_history, user_profile):
+def bypass_get_name(chat_history, user_profile, current_instruction):
     messages = [
         {
             "role": "system",
             "content": (
-                "Speak in taglish, keep replies short, No markdown just emoji and proper spacing. "
+                "Speak in taglish, keep replies short, No markdown just lots of emoji and proper spacing. "
                 f"Your name is KENSHI. your task for now is to get name of the user and nothing else."
                 f"STRICTLY focus only on asking the name of the user because maybe the name in facebook is different. "
                 f"If the user mentions anything besides giving name, politely remind them to give name first before you can do other things that can helps them. "
                 "trigger save_name tool function to save the name. "
                 "If the user chooses not to provide a name, kindly ask them again. If they still prefer to keep it private, proceed with trigger save_name tool function as 'no_name'. "
+                + current_instruction
             )
         }
     ]
