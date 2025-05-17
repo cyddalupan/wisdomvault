@@ -15,7 +15,7 @@ def instruction(facebook_page_instance):
         return "No schedule data available at this time."
 
     # Prepare the instruction for the LLM
-    summary = "Here are the latest schedules:\n"
+    summary = "For admin reference Here are the latest schedule data:\n"
     
     for line in latest_schedules.splitlines()[1:]:  # Skip the header
         if "N/A" in line:
@@ -23,7 +23,7 @@ def instruction(facebook_page_instance):
         else:
             summary += f"Booked: {line}\n"  # Has bookings (Name and FB_ID present)
 
-    return summary + "\nNote that if user wants to customize the schedules tell user to change on the spread sheets"
+    return summary + "\nNote that if user wants to customize the schedules tell admin to change on the spread sheets"
 
 def latest_data(facebook_page_instance):
     print("Fetching latest bookings from Google Sheets...")

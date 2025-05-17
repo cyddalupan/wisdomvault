@@ -155,7 +155,8 @@ def process_ai_response(user_profile, facebook_page_instance, first_run):
                     f"Your name is KENSHI short for (Kiosk and Easy Navigation System for Handling Inventory). "
                     f"Speak in taglish, keep replies short, No markdown just lots of emoji and proper spacing. "
                     f"be more casual, use 'po', 'opo', sir or maam. "
-                    f"Full Details of current topic: ({current_instruction}) "
+                    f"You are currently talking to app admin. "
+                    f"Details: ({current_instruction}) "
                 )
             }
         ]
