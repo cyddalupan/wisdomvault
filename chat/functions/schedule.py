@@ -100,8 +100,6 @@ def get_booking_date(facebook_page_instance, fb_id):
     current_time = time.time()
     page_id = facebook_page_instance.page_id
     cached_data = get_cache(page_id, cache_booking)
-    print("cached_time",cached_data['timestamp'])
-    print("computed",current_time - cached_data['timestamp'])
     if current_time - cached_data['timestamp'] > 60:
         print("Fetching bookings from Google Sheets...")
         if facebook_page_instance and getattr(facebook_page_instance, 'sheet_id', None):
