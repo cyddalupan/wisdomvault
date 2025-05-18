@@ -56,7 +56,7 @@ class GrammarCheckAdmin(admin.ModelAdmin):
         ]
         messages.append({"role": "user", "content": text})
         completion = client.chat.completions.create(
-            model="o4-mini",
+            model="gpt-4o-mini",
             messages=messages,
         )
         return completion.choices[0].message.content

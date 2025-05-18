@@ -44,7 +44,7 @@ def bypass(activeHelp, chat_history, user_profile, facebook_page_instance):
     tools = generate_tools()
 
     completion = client.chat.completions.create(
-            model="o4-mini",
+            model="gpt-4o-mini",
             messages=messages,
             tools=tools
         )
@@ -164,7 +164,7 @@ def tool_function(tool_calls, user_profile, facebook_page_instance):
                 try:
                     # Request a completion from the model
                     completion = client.chat.completions.create(
-                        model="o4-mini",
+                        model="gpt-4o-mini",
                         messages=messages,
                     )
                     save_additional_info(facebook_page_instance, completion.choices[0].message.content)

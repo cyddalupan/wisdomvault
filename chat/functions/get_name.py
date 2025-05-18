@@ -49,7 +49,7 @@ def bypass_get_name(chat_history, user_profile, current_instruction):
     # print("CATEGORY MESSAGE:", messages)
     # print("CATEGORY TOOL", tools)
     completion = client.chat.completions.create(
-        model="o4-mini",
+        model="gpt-4o-mini",
         messages=messages,
         tools=tools
     )

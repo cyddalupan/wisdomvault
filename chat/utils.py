@@ -79,7 +79,7 @@ def summarizer(user_profile):
 
         # Request a completion from the model
         completion = client.chat.completions.create(
-            model="o4-mini",
+            model="gpt-4o-mini",
             messages=messages,
         )
 
@@ -142,7 +142,7 @@ def summarize_sales(facebook_page_instance):
             ]
             
             completion = client.chat.completions.create(
-                model="o4-mini",
+                model="gpt-4o-mini",
                 messages=messages,
             )
 

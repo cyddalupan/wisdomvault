@@ -55,7 +55,7 @@ def get_context(assistant_name, request, extra_context=None):
             messages.extend(chat_pairs)
 
             completion = client.chat.completions.create(
-                model="o4-mini",
+                model="gpt-4o-mini",
                 messages=messages,
             )
             ai_reply = completion.choices[0].message.content
